@@ -1011,7 +1011,7 @@ function tick(){
   var YF=yearFlow(G,a);G.res.assets+=YF.net+YF.lump-YF.plan;G.lastFlow=YF;
   if(YF.lump)feed(G.p.md.lumpForm==='annuity'?'退職金（年金形式）を受け取った':'退職金を受け取った','big','+'+man(YF.lump)+'・あなたの見込み額');
   YF.planL.forEach(function(x){feed('予定していた支出：'+x.label,'big','−'+man(+x.amt)+'・あなたの見積もり')});
-  if(G.lifeTable!=='none'){if(!G.rolls[a])G.rolls[a]={r:rand(),q:qx(G.lifeTable,a)};var R=G.rolls[a];if(R.r<R.q){finish('death','',{q:R.q});return}}
+  if(G.lifeTable!=='none'){if(!G.rolls[a])G.rolls[a]={r:rand(),q:qx(G.lifeTable,a)};var R=G.rolls[a];if(R.r<R.q){if(!G.bedDone){G.dyingQ=R.q;G.playing=false;G.queue.push({type:'bed'});save();render();return}finish('death','',{q:R.q});return}}
   G.age=a+1; var A=G.age;if(G.stress){G.stress=Math.max(0,G.stress-20);if(!G.stress)feed('離婚のストレスが、やわらいできた','','ゲーム上の設定')}
   // 家族の一年（あなたが生きていた場合のみ）。順番：配偶者→親
   var F=G.fam||{spouse:null,parents:[],kids:[]},evs=[];
@@ -1034,7 +1034,7 @@ function tick(){
   if(MILESTONE[A]){feed(MILESTONE[A],'big');ev('mile',{m:MILESTONE[A]})}
   F.kids.forEach(function(k){if(k.age===18)feed(k.name+'が18歳。成人を迎えた','big');if(k.age===20)feed(k.name+'が20歳に','');
   });
-  lifeEvents(A,F);libEvent(A);factTimed(A);wishTick(A);themeTick(A);goalTick(A);if(G.pendingDiv&&A>=G.pendingDiv){G.pendingDiv=null;G.queue.push({type:'div',follow:1})}if(!(F2(G).divNext>A))divTick(A);
+  lifeEvents(A,F);libEvent(A);factTimed(A);wishTick(A);themeTick(A);goalTick(A);hob60Tick(A);if(G.pendingDiv&&A>=G.pendingDiv){G.pendingDiv=null;G.queue.push({type:'div',follow:1})}if(!(F2(G).divNext>A))divTick(A);
   [[50,'M020'],[60,'M021'],[70,'M022']].forEach(function(x){if(A===x[0]&&!(PC().lean&&x[1]!=='M021'))queueM(x[1])});
   var penA=G.p.md&&G.p.md.penStatus==='notyet'&&nz(G.p.md.penAge)!=null?G.p.md.penAge:65;if(A===penA&&!(G.p.md&&G.p.md.penStatus==='receiving'))queueM('M010');
   evs.forEach(function(e){
@@ -1050,7 +1050,8 @@ function tick(){
   if(A===G.p.retireAge){themeWant('t5','退職の年');themeWant('t6','退職の年')}
   if(A===G.p.retireAge&&G.p.retirePace==null&&!G.p.md) G.queue.push({type:'retire'});
   if(A===G.p.retireAge&&G.p.md) feed('退職の日を迎えた','big','これからは、入力した退職後の前提で暮らす');
-  if(A>=50&&A%PC().body===0&&!G.checked[A]) G.queue.push({type:'body'});
+  if(yakuAges().indexOf(A)>=0&&!G.checked[A]) G.queue.push({type:'body',yaku:true});
+  if(A===75&&!F2(G).elder75){F2(G).elder75=1;feed('75歳。後期高齢者になった','big',hasRegret()?'思い残したことがあるときは、体力しだいで立ち止まる':'ここからは自動で進む');G.playing=true}
   if(G.goal.age&&A===G.goal.age-1&&!G.goal.reachedAt&&!G.stillNear&&!(G.goal.history||[]).length){G.stillNear=A;askVoice('still')}
   if(G.goal.age&&A===G.goal.age&&!G.goal.reachedAt&&!G.goal.open) G.queue.push({type:'deadline'});
   if(G.nextBranch==null) G.nextBranch=A+1;
@@ -1114,7 +1115,7 @@ function finish(type,reason,extra){G.ending={type:type,age:G.age,reason:reason||
 /* 自動進行 */
 var timer=null;
 function stopTimer(){if(timer){clearTimeout(timer);timer=null}}
-function loop(){stopTimer();if(!G.playing||G.phase!=='play')return;if(G.queue.length){render();return}tick()}
+function loop(){stopTimer();if(G.phase==='play'&&G.age>=75&&!G.queue.length)G.playing=true;if(!G.playing||G.phase!=='play')return;if(G.queue.length){render();return}tick()}
 function play(){G.playing=true;save();loop();renderHud()}
 function pause(){G.playing=false;stopTimer();save();renderHud()}
 
@@ -1279,6 +1280,8 @@ function sceneFor(it){var g=G.goal.view||'forest';
   if(it.type==='lib'){var le=libById(it.k,it.id);return {id:'stage',par:libScene(le[2]),cap:le[1]}}
   if(it.type==='whatif')return {id:'stage',par:{bg:'room',actors:[{w:'hero',x:90,a:'look'}],props:['appliance','papers'],loop:true},cap:'もしもの出費'};
   if(it.type==='look'){var sp=G.fam&&G.fam.spouse&&G.fam.spouse.alive;return {id:'stage',par:{bg:'room',actors:sp?[{w:'hero',x:56,a:'wave'},{w:'sp',x:100,a:'stand',dir:-1}]:[{w:'hero',x:76,a:'wave'}],loop:true},cap:'分身の見た目'}}
+  if(it.type==='bed')return {id:'dusk',par:{view:G.goal.view||'forest',dur:16000},cap:'夕暮れの水辺で、景色を眺めている'};
+  if(it.type==='hob60'){var HE=HOB60[it.i]||HOB60[0];return {id:'stage',par:{bg:HE.bg,actors:[{w:'hero',x:40,a:'talk'},{w:'friend',x:84,a:'talk',dir:-1},{w:'neighbor',x:110,a:'stand',dir:-1}],loop:true},cap:HE.t}}
   if(it.type==='div')return {id:'stage',par:{bg:'desk',actors:[{w:'hero',x:70,a:'read'}],props:['papers'],loop:true},cap:it.follow?'これからを、決める':'離婚を考える'};
   if(it.type==='gstep'){var GD=GSTEP[it.ax]||GSTEP.work;return {id:'stage',par:{bg:GD.bg,actors:[{w:'hero',x:it.st==='bold'?20:50,to:it.st==='bold'?96:80,a:'walk',then:it.ok?'wave':'look'}],props:it.ax==='learn'?['book']:it.ax==='money'?['papers']:[],loop:true},cap:GD[it.st][0]}}
   if(it.type==='wish')return wishScene(it);
@@ -1287,7 +1290,7 @@ function sceneFor(it){var g=G.goal.view||'forest';
   if(it.type==='voice'){var nb=G.queue[1];if(it.key==='det'&&nb&&nb.det){var dd=detById(nb.det);return {id:'stage',par:dd.intro,cap:dd.title}}return {id:it.key==='still'?(G.goal.view||'forest'):'stage',par:{bg:'lake',actors:[{w:'hero',x:72,a:'stand'}]},cap:'ひとつだけ、問いかけ'}}
   if(it.type==='feel')return {id:'bench',par:{},cap:'今の暮らしを、感じてみる'};
   if(it.type==='fact'){var FS={sex:{bg:'lake',actors:[{w:'hero',x:20,to:72,a:'walk',then:'stand'}]},work:{bg:'street',actors:[{w:'hero',x:24,to:96,a:'walk',then:'stand'}]},fam:{bg:'table',actors:[{w:'hero',x:70,a:'sit'}]},money:{bg:'desk',actors:[{w:'hero',x:70,a:'read'}],props:['papers']},self:{bg:'room',actors:[{w:'hero',x:80,a:'look'}]}};return {id:'stage',par:FS[it.key]||FS.sex,cap:(FACTQ[it.key]||{}).cap||''}}
-  if(it.type==='body')return {id:'stage',par:{bg:'lake',actors:[{w:'hero',x:20,to:80,a:'walk',then:'stand'}]},cap:G.age+'歳、体の節目'};
+  if(it.type==='body')return {id:'stage',par:{bg:'lake',actors:[{w:'hero',x:20,to:80,a:'walk',then:'stand'}]},cap:G.age+'歳、'+(it.yaku?(G.age===60?'還暦の休憩':'厄年の休憩'):'体の節目')};
   if(it.type==='retire')return {id:'stage',par:{bg:'office',actors:[{w:'boss',x:96,a:'give',dir:-1},{w:'hero',x:30,to:78,a:'walk',then:'receive'}],props:['spark']},cap:'最後の出勤'};
   if(it.type==='review')return {id:'path',par:{season:(G.age||0)%4,fam:famCount()},cap:'ふりかえり'};
   if(it.type==='deadline'||it.type==='reach')return {id:g,par:{},cap:'目指した景色'};
@@ -1299,7 +1302,30 @@ function sky(c,t,night){var k=t/1000;if(night){for(var y=0;y<60;y++)R(c,0,y,160,
   var tod=Math.floor(t/7000)%3,sk=SKY[tod];for(var y=0;y<50;y++)R(c,0,y,160,1,y<17?sk[0]:y<34?sk[1]:sk[2]);
   var sx=tod===0?30:tod===1?80:128,sy=tod===1?10:tod===0?28:30;R(c,sx,sy,7,7,tod===2?'#ffd27a':'#fff4c8');
   for(var i=0;i<2;i++){var cx=((k*4+i*80)%200)-30;R(c,cx,8+i*8,14,3,'rgba(255,255,255,.85)');R(c,cx+3,6+i*8,8,2,'rgba(255,255,255,.85)')}}
-function drawScene(c,id,t,P){var k=t/1000,b=Math.floor(k*3)%2;
+/* v36.32：最期の問いかけの景色。夕暮れの水辺に座って景色を眺める。空は夕焼けから星空へゆっくり変わる。本人が選んだ景色（海辺・森と湖・田畑・町・家）に置き換える */
+function lerpC(a,b,f){var p=function(h){if(h[0]!=='#')return h.match(/\d+/g).map(Number);return [parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)]},x=p(a),y=p(b);return 'rgb('+x.map(function(v,i){return Math.round(v+(y[i]-v)*f)}).join(',')+')'}
+function duskScene(c,t,P){var k=t/1000,f=Math.min(1,t/(P.dur||16000)),v=P.view||'forest',W=160;
+  var g3=function(a,m,b){return f<.5?lerpC(a,m,f*2):lerpC(m,b,(f-.5)*2)},top=g3('#e07a52','#4a3a6e','#0b1530'),mid=g3('#f0a868','#9a5f86','#13234a'),low=g3('#f6cf8f','#e3907a','#22355e');
+  for(var y=0;y<52;y++)R(c,0,y,W,1,y<26?lerpC(top,mid,y/26):lerpC(mid,low,(y-26)/26));
+  var sy=34+f*26;if(f<.85){R(c,108,sy,9,9,lerpC('#fff0b0','#ff9a5a',f));R(c,106,sy+2,13,5,lerpC('#fff0b0','#ff9a5a',f))}
+  if(f>.45){var a=Math.min(1,(f-.45)/.4);for(var i=0;i<28;i++){var sx=(i*53)%W,sy2=(i*29)%40,tw=Math.floor(k*2+i)%3?1:.5;R(c,sx,sy2,1,1,'rgba(255,250,230,'+(a*tw).toFixed(2)+')')}
+    var mc='rgba(255,246,210,'+a.toFixed(2)+')';R(c,29,9,7,5,mc);R(c,30,8,5,7,mc);R(c,32,8,4,6,lerpC(top,mid,.25));R(c,33,9,3,4,lerpC(top,mid,.25))}
+  var hz=52,water=function(y0,y1){var deep=g3('#3c6496','#3a3f74','#0d1a36'),surf=lerpC(low,g3('#7fa6cf','#8a7aa8','#2a3d66'),.55);
+    for(var y=y0;y<y1;y++)R(c,0,y,W,1,lerpC(surf,deep,Math.pow((y-y0)/(y1-y0),.8)));
+    for(var y=y0+1;y<y1;y+=2)for(var x=(y*37+Math.floor(k*1.2)*7)%29;x<W;x+=29){var on=(Math.floor(k*2+x*.3+y)%3)!==0;if(on)R(c,x,y,2+(y%2),1,'rgba(255,255,255,'+(0.18+0.12*(1-f)).toFixed(2)+')')}
+    if(f<.9){var gl=1-f/.9;for(var y=y0+1;y<y1;y+=2){var w=2+Math.round((y-y0)/3),sh=Math.round(Math.sin(k*2+y*.7)*2);if((Math.floor(k*3)+y)%4)R(c,112-w/2+sh,y,w,1,'rgba(255,214,150,'+(0.75*gl).toFixed(2)+')')}}
+    if(f>.5){var mg=Math.min(1,(f-.5)/.4);for(var y=y0+2;y<y1;y+=3){if((Math.floor(k*2)+y)%3)R(c,31+Math.round(Math.sin(k*1.5+y)*1.5),y,3,1,'rgba(255,246,210,'+(0.45*mg).toFixed(2)+')')}}
+    R(c,0,y0,W,1,'rgba(255,255,255,'+(0.25*(1-f)+0.08).toFixed(2)+')')};
+  var dark=function(h){return lerpC(h,'#0a1410',f*.75)};
+  if(v==='sea'){water(hz,76);R(c,0,76,W,14,dark('#d9c08e'));for(var x=0;x<W;x+=6)R(c,x+Math.floor(Math.sin(k*1.5+x)*2),75,5,1,'rgba(255,255,255,.5)')}
+  else if(v==='field'){for(var x=0;x<W;x+=1)R(c,x,hz-6+Math.round(Math.sin(x/18)*3),1,10,dark('#557a3a'));R(c,0,hz+2,W,38,dark('#7aa84d'));for(var y=hz+6;y<90;y+=5)R(c,0,y,W,1,dark('#5c8c38'));water(60,68)}
+  else if(v==='town'){[[0,14],[18,22],[40,16],[60,26],[86,18],[104,24],[130,15],[146,20]].forEach(function(b,i){R(c,b[0],hz-b[1],16,b[1]+6,dark('#6f6a62'));if(f>.4&&i%2===0)R(c,b[0]+5,hz-b[1]+5,3,3,'#ffd98a')});water(hz+6,76);R(c,0,76,W,14,dark('#8f877a'))}
+  else if(v==='home'){R(c,0,hz,W,38,dark('#6fa65a'));R(c,100,hz-20,40,24,dark('#e8d6b4'));R(c,96,hz-26,48,7,dark('#9c4a33'));R(c,108,hz-12,10,8,f>.35?'#ffd98a':dark('#a9d6e8'));
+    for(var x=0;x<96;x+=6)R(c,x,hz+4,2,8,dark('#b89a74'));R(c,0,hz+6,96,1,dark('#b89a74'));for(var x=6,j=0;x<90;x+=9,j++)R(c,x,hz+14-(j%2),3,3,dark(['#e9566b','#f2c94c','#ffffff'][j%3]));water(66,74)}
+  else{for(var x=0;x<W;x+=9)pine(c,x,hz-18+(x*5%7),18,dark(x%2?'#24502f':'#2c5f37'));water(hz,76);R(c,0,76,W,14,dark('#4f8a45'))}
+  R(c,18,79,20,2,dark('#7a5434'));R(c,20,81,2,6,dark('#5a3d27'));R(c,34,81,2,6,dark('#5a3d27'));
+  fig(c,22,64,heroLook(),'sit',k,1,0)}
+function drawScene(c,id,t,P){if(id==='dusk'){duskScene(c,t,P);return}var k=t/1000,b=Math.floor(k*3)%2;
   if(id==='path'){sky(c,t);var se=P.season||0,gr=['#86b85e','#5f9e45','#c98a3e','#e8eef0'][se];
     R(c,0,48,160,42,gr);for(var x=0;x<160;x+=4)R(c,x,48-Math.round(Math.sin(x/18)*3)-2,4,4,gr);
     for(var i=0;i<6;i++){var tx=i*30+4;R(c,tx+3,34,2,14,'#5a3a22');var lc=['#f2a7c0','#3f8a3c','#d9692a','#ffffff'][se];R(c,tx,26,8,9,lc);R(c,tx+1,24,6,2,lc);
@@ -1591,13 +1617,13 @@ function sWish(it){var W=G.wish;if(!W){afterResolve();return}var O=WISHO[W.type]
 function sWishGo(it){var W=G.wish,O=WISHO[W.type]||WISHO.do;
   if(it.from==='prep'&&!it.ready){stage('<span class="latin">Ready</span><h2>準備の一年が過ぎた</h2>'+miya('「'+esc(W.text)+'」。その間に、何か変わった？')+
     '<div class="actions"><button class="gold" id="r1">予定どおり、かなえに行く</button><button id="r2">形を変えて、かなえる</button><button class="ghost" id="r3">もう少し待つ</button></div><input id="rtx" maxlength="60" placeholder="形を変えるなら、どんなふうに？" hidden>');
-    $('r1').onclick=function(){it.ready=1;sWishGo(it)};
-    $('r2').onclick=function(){var x=$('rtx');if(x.hidden){x.hidden=false;x.focus();return}var t=x.value.trim();if(t){W.hist.push({age:G.age,from:W.text,to:t});feed('かなえ方を変えた：「'+t+'」','big','あなたの希望');W.text=t}it.ready=1;sWishGo(it)};
+    $('r1').onclick=function(){it.ready=1;save();render()};
+    $('r2').onclick=function(){var x=$('rtx');if(x.hidden){x.hidden=false;x.focus();return}var t=x.value.trim();if(t){W.hist.push({age:G.age,from:W.text,to:t});feed('かなえ方を変えた：「'+t+'」','big','あなたの希望');W.text=t}it.ready=1;save();render()};
     $('r3').onclick=function(){W.state='open';W.next=G.age+2;feed('「'+W.text+'」は、もう少し待つことにした','pick','事情が変わった');afterResolve()};return}
   if(it.small){stage('<span class="latin">A Small Try</span><h2>小さく、試してみた</h2>'+miya('「'+esc(W.text)+'」の、入り口に立ってみた。どうだった？')+
     '<div class="actions"><button class="gold" id="s1">本番に進みたい</button><button id="s2">このくらいがちょうどいい</button><button class="ghost" id="s3">別の希望を考えたい</button></div>');
     $('s1').onclick=function(){W.next=G.age+1;feed('小さく試した。次は本番へ','pick','一度はかなえたいこと');afterResolve()};
-    $('s2').onclick=function(){it.small=false;sWishGo(it)};
+    $('s2').onclick=function(){it.small=false;save();render()};
     $('s3').onclick=function(){W.next=G.age+1;feed('小さく試して、別の希望も考えはじめた','pick','一度はかなえたいこと');afterResolve()};return}
   W.state='done';W.doneAt=G.age;feed(O.done,'big','「'+W.text+'」');
   stage('<span class="latin">A Wish Came True</span><h2>'+esc(O.done)+'</h2>'+miya('かなえてみて、どう感じましたか？')+
@@ -1748,7 +1774,7 @@ function autoPlan(it){if(!it)return null;
   if(it.type==='ev'&&!IMPEV.test(it.kind))return pick('#evc button');
   if(it.type==='review')return function(){return {label:'今回は、ふりかえりを見送る',run:function(){feed((it.custom||'「'+it.label+'」')+'：ふりかえりは見送った','','');afterResolve()}}};
   if(it.type==='feel')return function(){var b=app.querySelector('#fl button[data-v=skip]');return b&&{label:'今は答えずに進む',run:function(){b.click()}}};
-  if(it.type==='body'||it.type==='loss')return function(){var b=$('ok');return b&&{label:it.type==='loss'?'記録して、歩き出す':'この体で歩き続ける',run:function(){b.click()}}};
+  if((it.type==='body'&&!it.yaku)||it.type==='loss')return function(){var b=$('ok');return b&&{label:it.type==='loss'?'記録して、歩き出す':'この体で歩き続ける',run:function(){b.click()}}};
   if(it.type==='gstep')return function(){var b=app.querySelector('#gsr button');return b&&{label:b.textContent,run:function(){b.click()}}};
   if(it.type==='joy')return function(){var b=app.querySelector('#stage .choices button[data-v=keep]');return b&&{label:'喜びをかみしめて、進む',run:function(){b.click()}}};
   return null}
@@ -1756,24 +1782,35 @@ function autoPlan(it){if(!it)return null;
 var DEMOG=[['海の見える町で、週3日だけ好きな仕事をしている','go','元気なうちに北海道を旅したい'],['森の近くの家で、畑と読書の毎日','keep','畑仕事をずっと続けたい'],['町の小さな店で、人と話しながら暮らす','do','小さな喫茶店を開いてみたい'],['家族の近くで、孫の成長を見守る','meet','学生時代の友人にもう一度会いたい']];
 function startDemo(){G=fresh();var r=function(n){return Math.floor(Math.random()*n)},d=DEMOG[r(DEMOG.length)];G.pace='demo';G.p.age=[45,50,55,60][r(4)];G.goal.text=d[0];G.goal.view=['sea','forest','field','town','home'][r(5)];G.wishT=d[1];G.wishX=d[2];
   var ks=AXES.map(function(a){return a[0]}).sort(function(){return Math.random()-.5});G.top3=ks.slice(0,3);var nv=NEAR[r(3)];G.near0={v:nv[0],l:nv[1]};G.p.tRisk=[2,3,4][r(3)];G.p.tCare=[2,3,4][r(3)];G.quick=true;G.speed=PACE.demo.ms;G.axes=defaultAxes();axesAuto();start();G.playing=true;save();render()}
-function autoAll(it){var pc=G.pace||'normal';if(pc==='demo')return true;if(pc!=='turbo')return false;
+/* v36.30：休憩は男性の厄年42歳と、還暦の60歳（全員）。75歳（後期高齢者）からは自動で進む。思い残しの場面だけ、体力に応じた確率で立ち止まって本人が選ぶ（ゲーム上の確率） */
+function yakuAges(){var m=G.p.sex==='m'||(G.p.sex!=='f'&&G.lifeTable==='m');return m?[42,60]:[60]}
+var ENP={high:.8,mid:.55,low:.3};
+function regretItem(it){return it&&(it.type==='wish'||it.type==='theme'||it.type==='div'||it.type==='deadline'||it.type==='goal'||(it.type==='voice'&&it.key==='recover'))}
+function hasRegret(){var W=G.wish,T=G.themes||{},fl=F2(G);if(W&&W.state!=='done'&&W.state!=='gone')return true;if(G.goal&&G.goal.text&&!G.goal.reachedAt)return true;
+  if(Object.keys(T).some(function(k){return T[k].state!=='decided'}))return true;return !!(fl.spFight||fl.frFight)}
+function elderAuto(it){if(it.type==='bed')return (G.pace==='demo');if(!G.age||G.age<75||G.phase!=='play')return null;if(G.pace==='demo')return true;if(it.type==='fact'&&it.key==='sex')return false;
+  if(!regretItem(it))return true;if(it.rr==null){it.rr=rand()<(ENP[G.energy]||.55)?1:0;if(it.rr)feed('思い残したことに、もう一度向き合う','','体力（'+ENERGY[G.energy]+'）にもとづくゲーム上の確率');else{it.weak=1}}return !it.rr}
+function autoAll(it){var ea=elderAuto(it);if(ea!=null)return ea;var pc=G.pace||'normal';if(pc==='demo')return true;if(it.type==='body'&&it.yaku)return false;if(pc!=='turbo')return false;
   if(it.type==='branch'&&it.stage!=='act')return false;if(it.type==='fact'&&it.key==='sex')return false;return true}
 function autoAnyPlan(it){return function(){var S=$('stage');if(!S)return null;var st=gsStyle(G),lbl='',runs=[],q=function(x){return S.querySelector(x)};
   var tap=function(btn){if(!btn)return;runs.push(function(){btn.click()});if(!lbl)lbl=btn.textContent};
   if(it.type==='branch'&&it.stage!=='act'){var f=q('[data-flip=omakase]');runs.push(function(){if(f)f.click();var p=app.querySelector('[data-pick=omakase]')||app.querySelector('[data-pick]');if(p)p.click();else{var k=$('skip');if(k)k.click()}});var real=it.om&&it.om.m;lbl=(it.opts[real]||{}).h||'おまかせの道';return {label:lbl,run:function(){runs.forEach(function(r){r()})}}}
   var mid=function(c){var b=[].slice.call(c.querySelectorAll('button:not([disabled])')).filter(function(x){return !/答えない|わからない|分からない/.test(x.textContent)});if(!b.length)b=[].slice.call(c.querySelectorAll('button:not([disabled])'));return b.length?b[autoPick(b,it)===0&&b.length>2?Math.floor(b.length/2):autoPick(b,it)]:null};
+  if(it.type==='bed'){var qb=q('#bd button[data-v=quiet]');return qb&&{label:'今は、静かに過ごしたい',run:function(){qb.click()}}}
   if(it.type==='fact'&&it.key==='sex'){var sb=S.querySelectorAll('.qblock[data-id=sex] button');tap(sb[Math.floor(rand()*2)])}
   if(it.type==='voice'){var v3=$('v2')||$('v3');return v3&&{label:'まだ分からない',run:function(){v3.click()}}}
-  if(it.type==='div'){var d=q('#dvo button[data-v=talk]')||q('#dvf button[data-v=stay]');tap(d)}
-  if(it.type==='theme'){var o=S.querySelectorAll('#tho button');tap(st==='calm'?q('#ths button[data-v=later]'):o[st==='bold'?0:1])}
-  if(it.type==='wish'&&!it.go){tap(q('#wo button[data-v='+(st==='bold'?'now':st==='calm'?'try':'prep')+']'));tap(q('#wa button[data-v="20"]'))}
+  if(it.type==='div'&&!it.weak){var d=q('#dvo button[data-v=talk]')||q('#dvf button[data-v=stay]');tap(d)}
+  if(it.weak){lbl='体力が追いつかず、今回は見送った';if(it.type==='theme')tap(q('#ths button[data-v=undecided]'));if(it.type==='wish'&&!it.go)tap(q('#wo button[data-v=hold]'));if(it.type==='div')tap(q('#dvo button[data-v=wait]')||q('#dvf button[data-v=wait]'))}
+  if(it.type==='theme'&&!it.weak){var o=S.querySelectorAll('#tho button');tap(st==='calm'?q('#ths button[data-v=later]'):o[st==='bold'?0:1])}
+  if(it.type==='wish'&&!it.go&&!it.weak){tap(q('#wo button[data-v='+(st==='bold'?'now':st==='calm'?'try':'prep')+']'));tap(q('#wa button[data-v="20"]'))}
   S.querySelectorAll('.qblock[data-id],.choices').forEach(function(c){if(c.closest('[hidden]'))return;if(/^(tho|ths|wo|wa|dvo|dvf|vo)$/.test(c.id))return;if(c.querySelector('.on'))return;tap(mid(c))});
+  if(!runs.length){var onb=q('.choices button.on')||q('.choices button:not([disabled])');if(onb)tap(onb)}
   var go=null;['#fok','#thok','#wgo','#dvok','#lkok','#an','#ok','#f1','#v1'].some(function(x){var b=q(x);if(b){go=b;return true}});if(!go)go=q('button.gold')||q('.actions button');
   if(go)runs.push(function(){go.disabled=false;go.click()});if(!lbl&&go)lbl=go.textContent;
   return runs.length?{label:lbl,run:function(){runs.forEach(function(r){r()})}}:null}}
 /* v36.16：自動で進む場面のうち、重要でないものは動画を見せずにすぐ進める（遅い0%・普通40%・速い50%・高速60%をカット） */
 var AUTOCUT={slow:0,normal:.4,fast:.5,turbo:.6,demo:.6},AC={n:0,cut:0};
-function autoTier(it){if(/^(loss|joy|wish|div|retire|kidMarry)$/.test(it.type)||(it.type==='ev'&&/^(grand|ggrand|spHosp|hosp)$/.test(it.kind)))return 3;
+function autoTier(it){if(/^(loss|joy|wish|div|retire|kidMarry|hob60)$/.test(it.type)||(it.type==='ev'&&/^(grand|ggrand|spHosp|hosp)$/.test(it.kind)))return 3;
   if(it.type==='theme'||it.type==='fact'||it.type==='branch'||(it.type==='ev'&&(MAJOR[it.kind]||IMPEV.test(it.kind))))return 2;
   if(it.type==='gstep'||it.type==='voice'||(it.type==='ev'&&MINOR[it.kind]))return 1;return 0}
 function autoCut(it){var r=AUTOCUT[G.pace||'normal']||0;if(!r)return false;var t=autoTier(it),lim=[r+.3,r,r-.1,-1][t],cut=AC.cut<lim*(AC.n+1);AC.n++;if(cut)AC.cut++;return cut}
@@ -1787,6 +1824,46 @@ function autoArm(it){clearTimeout(autoT);var f=autoAll(it)?autoAnyPlan(it):autoP
     if($('scr'))startScene($('scr'),'stage',par);var cap=app.querySelector('.cap');if(cap)cap.textContent=(evcap?evcap+'：':'')+r.label;
     var SG=$('stage');[].forEach.call(SG.children,function(x){x.style.display='none'});SG.insertAdjacentHTML('beforeend','<section class="panel"><span class="latin">Auto</span>'+(evcap?'<p class="small muted">場面：'+esc(evcap)+'</p>':'')+'<h2>「'+esc(r.label)+'」</h2>'+miya(esc(STYL[gsStyle(G)])+'あなたなら、こうするかもしれない。そう推計して、自動で選んだよ。')+'<p class="small muted">この場面の選択は、あなたの性格から推計したものです。止めたいときは、次の場面で「自分で選ぶ」を押してね。</p></section>');
     autoT=setTimeout(function(){if(G.queue[0]===it){AUTO_NOW=1;try{r.run()}finally{AUTO_NOW=0}}},D)},D)}
+/* v36.30：60〜70歳は、趣味を通して交流を深める機会を2年ごとに入れる（ゲーム上の出来事。点数は自動で動かさない） */
+var HOB60=[
+ {t:'趣味のサークルに誘われた',d:'公民館の掲示板の前で、同じ年ごろの人に声をかけられた。「よかったら、来週の集まりに」',bg:'hall',o:[['入ってみる','仲間ができた。毎週の楽しみが一つ増えた'],['一度だけ見学する','雰囲気だけ見てきた。顔見知りが一人できた'],['今回は見送る','また誘ってね、と言ってもらえた']]},
+ {t:'仲間と作品展を開く',d:'サークルで、作品を持ち寄って小さな展示をすることになった。',bg:'hall',o:[['自分の作品も出す','見に来た人と、作品の話で盛り上がった'],['受付を手伝う','裏方で、たくさんの人と顔を合わせた'],['見に行くだけにする','仲間の作品に、自分も刺激を受けた']]},
+ {t:'初心者に教えてほしいと頼まれた',d:'長く続けてきた趣味を、始めたばかりの人に教えてほしいという。',bg:'class',o:[['教えてみる','教えるうちに、自分も新しい発見があった'],['一緒に練習する','教える・教わるの垣根がなくなった'],['得意な人を紹介する','人と人をつなぐ役になった']]},
+ {t:'仲間と日帰りの旅',d:'趣味の仲間で、日帰りの小旅行に行こうという話が出た。',bg:'station',o:[['一緒に行く','帰りの電車で、昔話に花が咲いた'],['幹事を引き受ける','段取りの大変さと、ありがとうの言葉が残った'],['今回は見送る','写真とおみやげ話が届いた']]},
+ {t:'地域のお祭りで腕前を披露',d:'お祭りの出し物に、サークルとして参加しないかと声がかかった。',bg:'street',o:[['舞台に立つ','拍手の中で、仲間と顔を見合わせた'],['準備を手伝う','前の晩まで、みんなで支度をした'],['客席から応援する','知った顔が舞台にいて、うれしかった']]}];
+function hob60Tick(A){if(A<60||A>70)return;var fl=F2(G);if(fl.hob60Last!=null&&A-fl.hob60Last<2)return;if(A===60&&yakuAges().indexOf(60)>=0)return;
+  var n=fl.hob60N||0;if(n>=HOB60.length)return;fl.hob60Last=A;fl.hob60N=n+1;G.queue.push({type:'hob60',i:n})}
+function sHob60(it){var E=HOB60[it.i];if(!E){afterResolve();return}
+  stage('<span class="latin">Hobby & Friends</span><h2>'+esc(E.t)+'</h2><p class="desc">'+esc(E.d)+'</p>'+miya('あなたなら、どうする？')+
+   '<div class="choices" id="h6">'+E.o.map(function(o,i){return '<button data-i="'+i+'">'+esc(o[0])+'</button>'}).join('')+'</div><p class="small muted">趣味を通した交流の場面です（ゲーム上の出来事）。選んだことで点数が自動で上がり下がりすることはありません。</p>');
+  $('h6').querySelectorAll('button').forEach(function(b){b.onclick=function(){var o=E.o[+b.dataset.i],fl=F2(G);
+    feed('「'+o[0]+'」','pick',E.t);feed(o[1],'','趣味と交流');moment(E.t,o[0],o[1]);
+    if(!/見送/.test(o[0])){fl.community=1;fl.humble=fl.humble||0;(G.mem=G.mem||[]).push({age:G.age,kind:'social',who:'friend',t:E.t,r:o[1]});ledg(/教え|幹事|手伝|紹介|準備/.test(o[0])?'help':'self',E.t+'：'+o[0])}
+    afterResolve()}});
+}
+/* v36.31：最期を前に、ベッドで人生を振り返る場面。答えは満足度の減点にも、葬儀の評価にも使わない。本人の最後の回想として、終幕に映す */
+var BEDO=[['dream','まだ、やってみたかったことがある'],['meet','会いたい人・伝えたいことがある'],['joy','楽しかったことを思い出している'],['quiet','今は、静かに過ごしたい'],['words','自分の言葉で残す']];
+function bedHopes(){var o=[],add=function(t){t=String(t||'').trim();if(t&&o.indexOf(t)<0)o.push(t)};add(firstDream());if(G.goal&&G.goal.text)add(G.goal.text);
+  (G.goal.history||[]).forEach(function(h){add(String(h.to||'').replace(/（[^）]*歳）$/,''))});var W=G.wish;if(W){add(W.text);(W.hist||[]).forEach(function(h){if(h.from)add(h.from);if(h.to)add(h.to)})}return o.slice(0,6)}
+function bedPeople(){var F=G.fam||{kids:[],parents:[]},o=[];if(F.spouse&&!F.spouse.divorced)o.push(F.spouse.name);F.kids.forEach(function(k){o.push(k.name)});F.parents.forEach(function(x){o.push(x.name)});
+  if(G.grand)o.push('孫');if((G.mem||[]).some(function(m){return m.kind==='social'||m.who==='friend'}))o.push('友人');if(F.spouse&&F.spouse.divorced)o.push('別れた'+F.spouse.name);return o}
+function bedJoys(){var o=[],add=function(t){if(t&&o.indexOf(t)<0)o.push(t)};var W=G.wish;if(W&&W.doneAt!=null)add(W.text);
+  (G.gsteps||[]).filter(function(x){return x.ok}).forEach(function(x){add(x.t)});(G.mem||[]).forEach(function(m){if(m.kind==='social'&&m.t)add(m.t);if(m.kind==='grand')add('孫が生まれた日');if(m.kind==='kidMarry')add('子どもの結婚式')});return o.slice(-6)}
+function sBed(it){var step=it.step||'top',B=it.b||(it.b={});
+  var fin=function(){G.bed=B;G.bedDone=1;var lbl={dream:'まだ、やってみたかったことがある',meet:'会いたい人・伝えたいことがある',joy:'楽しかったことを思い出していた',quiet:'静かに過ごした',words:'自分の言葉を残した'}[B.k]||'静かに過ごした';
+    feed('最期を前に：'+lbl,'big',(B.pick?'「'+B.pick+'」':'')+(B.text?'「'+B.text+'」':''));G.queue.shift();save();finish('death','',{q:G.dyingQ||0})};
+  var chips=function(id,arr){return arr.length?'<div class="choices" id="'+id+'">'+arr.map(function(t){return '<button data-v="'+esc(t)+'">'+esc(t)+'</button>'}).join('')+'</div>':''};
+  if(step==='top'){stage('<span class="latin">The Last Light</span><h2>今、心に浮かぶことはありますか。</h2>'+miya('かなえたかったこと。会いたい人。伝えておきたい言葉。<br>何も浮かばなくても、大丈夫です。')+
+     '<div class="choices" id="bd">'+BEDO.map(function(o){return '<button data-v="'+o[0]+'">'+o[1]+'</button>'}).join('')+'</div><p class="small muted">ここでの答えは、点数にも評価にも使いません。あなたの最後の回想として、終幕に映します。</p>');
+    $('bd').querySelectorAll('button').forEach(function(b){b.onclick=function(){B.k=b.dataset.v;if(B.k==='quiet'){fin();return}it.step=B.k;sBed(it)}});return}
+  var q={dream:'どんなことが、心に残っていますか？',meet:'誰に、会いたいですか。伝えたいことはありますか？',joy:'どんなことを、思い出していますか？',words:'残しておきたい言葉を、どうぞ。'}[step];
+  var list=step==='dream'?chips('bp',bedHopes()):step==='meet'?chips('bp',bedPeople()):step==='joy'?chips('bp',bedJoys()):'';
+  stage('<span class="latin">The Last Light</span><h2>'+esc(q)+'</h2>'+(list?'<p class="small muted">'+(step==='dream'?'旅の中で記録した希望から選べます。':step==='meet'?'旅の中で関わった人から選べます。':'旅の記録から選べます。')+'（選ばなくても大丈夫）</p>'+list:'')+
+   '<textarea id="bt" maxlength="120" placeholder="'+(step==='meet'?'伝えたい言葉（書かなくても大丈夫）':'思ったことを、そのまま（書かなくても大丈夫）')+'"></textarea>'+
+   '<div class="actions"><button class="gold" id="bok">これを残す</button><button id="bnone">言葉にしなくていい</button><button class="ghost" id="bback">もどる</button></div>');
+  if($('bp'))$('bp').querySelectorAll('button').forEach(function(b){b.onclick=function(){var on=!b.classList.contains('on');$('bp').querySelectorAll('button').forEach(function(x){x.classList.remove('on')});if(on)b.classList.add('on');B.pick=on?b.dataset.v:''}});
+  $('bok').onclick=function(){B.text=$('bt').value.trim();fin()};$('bnone').onclick=function(){B.text='';fin()};$('bback').onclick=function(){it.step='top';B.pick='';sBed(it)};
+}
 /* ---- 八つの分野（かんたん設定） ---- */
 var LEVEL=[20,40,60,80,100];
 var NEARV=[30,60,90],NEARL=['まだ遠い','半分くらい','ほぼ理想'];
@@ -1896,7 +1973,9 @@ function hud(){var c=chipJ(G);return '<div class="hudmini" id="hudmini"><span cl
 function renderHud(){var h=$('hud');if(!h)return;var m=$('hudmini');if(m)m.remove();h.outerHTML=hud();bindHud()}
 function bindHud(){var busy=G.queue.length>0;$('pp').disabled=busy;if($('pp2'))$('pp2').disabled=busy;
   $('pp').onclick=function(){G.playing?pause():play()};if($('pp2'))$('pp2').onclick=$('pp').onclick;
-  app.querySelectorAll('[data-sp]').forEach(function(b){b.onclick=function(){G.pace=b.dataset.sp;G.speed=PACE[G.pace].ms;save();renderHud();if(G.playing)loop()}})}
+  app.querySelectorAll('[data-sp]').forEach(function(b){b.onclick=function(){var was=G.pace;G.pace=b.dataset.sp;G.speed=PACE[G.pace].ms;
+    /* v36.29：速さを変えたら、いま表示中の場面にもすぐ反映する（デモ・高速なら、その場面から自動で進む） */
+    if(G.pace==='demo')G.playing=true;save();if(G.phase==='play'&&G.queue.length&&was!==G.pace){render();return}renderHud();if(G.playing)loop()}})}
 /* v36.18：スマホでは、人生満足度とチャートを場面の下にたたんで置く（開くと見られる） */
 var IND_OPEN=false;
 /* v36.27：「八つの分野」の箱。スマホでは場面のすぐ下に1つだけ置き、満足度とチャートと見直しボタンをまとめる */
@@ -1925,7 +2004,7 @@ function vPlay(){
    (mob?'':axBox(false))+
    '<div class="menu"><button id="mm">お金の前提を見直す</button><button id="mw">もしもの出費を試す</button><button id="mh">もしもの病気・事故を試す</button><button id="mg">目標を変える</button><button id="mr">目標に到達した</button><button id="ma">あきらめる</button><button id="mp">休む（保存して中断）</button><button id="mi">ファイルに保存</button><button id="ms">出典とルール</button></div>');
   bindHud(); startScene($('scr'),sc.id,sc.par); bindInd();if($('indbox'))$('indbox').ontoggle=function(){IND_OPEN=this.open};if(TO_TOP){TO_TOP=0;scrTop()}
-  if(it){pauseSilently();({div:sDiv,gstep:sGstep,fact:sFact,look:sLook,theme:sTheme,wish:sWish,whatill:sWhatIll,lib:sLib,whatif:sWhatif,voice:sVoice,feel:sFeel,ev:sEv,joy:sJoy,loss:sLoss,kidMarry:sKid,branch:sBranch,review:sReview,body:sBody,retire:sRetire,deadline:sDeadline,goal:sGoal,reach:sReach,give:sGive}[it.type])(it);if(G.queue[0]===it&&G.phase==='play')autoArm(it)}
+  if(it){pauseSilently();({bed:sBed,hob60:sHob60,div:sDiv,gstep:sGstep,fact:sFact,look:sLook,theme:sTheme,wish:sWish,whatill:sWhatIll,lib:sLib,whatif:sWhatif,voice:sVoice,feel:sFeel,ev:sEv,joy:sJoy,loss:sLoss,kidMarry:sKid,branch:sBranch,review:sReview,body:sBody,retire:sRetire,deadline:sDeadline,goal:sGoal,reach:sReach,give:sGive}[it.type])(it);if(G.queue[0]===it&&G.phase==='play')autoArm(it)}
   else if(!G.playing) $('stage').innerHTML='<section class="panel"><p class="small muted">目指す景色：「'+esc(G.goal.text)+'」'+(G.goal.age?' · '+G.goal.age+'歳ごろ':'')+'</p>'+miya(G.feed.length<=2?'準備ができたよ。「人生を進める」を押すと、一年ずつ時が流れていく。分かれ道が来たら、そこで止まるからね。':'少し休んでいるところ。続けるときは「人生を進める」を。')+'</section>';
 
   if($('fix'))$('fix').onclick=function(){var k=judge(G).below[0];var c=SCENES.filter(function(x){return x.axes.indexOf(k)>=0&&x.when(G)});G.queue.push(branchItem(c[Math.floor(rand()*c.length)]));save();render()};
@@ -2153,8 +2232,8 @@ function sKid(it){
 }
 
 /* 体の節目 */
-function sBody(){var y=yuso(G.p.sex,G.age),a=G.axes.health,hv=a.cur,en=G.energy;
-  stage('<span class="latin">A Quiet Pause</span><h2>'+G.age+'歳、体の節目</h2>'+miya('少し立ち止まって、体の声を聞いてみよう。')+
+function sBody(it){var y=yuso(G.p.sex,G.age),a=G.axes.health,hv=a.cur,en=G.energy,yk=it&&it.yaku;
+  stage('<span class="latin">A Quiet Pause</span><h2>'+G.age+'歳、'+(yk?(G.age===60?'還暦の休憩':'厄年の休憩'):'体の節目')+'</h2>'+miya(yk?(G.age===60?'還暦を迎えた。ここで少し休んで、これまでとこれからを眺めてみよう。':'今年は厄年。ここで少し休んで、体の声を聞いてみよう。'):'少し立ち止まって、体の声を聞いてみよう。')+
    '<div class="okline small">'+y.sexL+'・'+y.band+'では、千人あたり <b class="num">'+y.rate+'</b> 人が何らかの自覚症状があると答えています（2022年 国民生活基礎調査）。ある時点の割合で、あなたの予測ではありません。</div>'+
    '<div class="qblock"><span class="qlabel">体の調子（健康の充足度・あなたの自己評価）</span><div class="choices" id="hb">'+nearBtns(hv)+'<button data-v="keep">今は答えない</button></div></div><p class="small muted">年齢による体力の変化は、ゲームでは数値にしません。あなたの感じ方だけで動きます。</p>'+
    '<div class="qblock"><span class="qlabel">新しいことに使える体力</span><div class="choices" id="eb">'+['high','mid','low'].map(function(v){return '<button data-v="'+v+'" class="'+(en===v?'on':'')+'">'+ENERGY[v]+'</button>'}).join('')+'</div></div>'+
@@ -2167,7 +2246,7 @@ function sBody(){var y=yuso(G.p.sex,G.age),a=G.axes.health,hv=a.cur,en=G.energy;
   $('ok').onclick=function(){if(hv!==a.cur)feed('体の調子：'+(a.cur==null?'未評価':nearLbl(a.cur))+' → '+(hv==null?'未評価':nearLbl(hv)),'','あなたの評価');a.cur=hv;
     if(en!==G.energy){feed('使える体力を「'+ENERGY[en]+'」に','','あなたの評価');G.energy=en}
     if(fd){G.res.freeH=Math.max(0,G.res.freeH+fd);feed('自由時間 週'+fmtH(G.res.freeH)+'時間に','','あなたの申告')}
-    G.checked[G.age]=1;if(PC().feel&&G.age%PC().feel===0)G.queue.splice(1,0,{type:'feel'});afterResolve()};
+    G.checked[G.age]=1;if(PC().feel&&G.age%PC().feel===0)G.queue.splice(1,0,{type:'feel'});if(yk&&G.age<75&&(G.pace||'normal')!=='demo'){G.playing=false;feed((G.age===60?'還暦':'厄年')+'。ここでひと休みした','','「進める」で再開')}afterResolve()};
 }
 /* 退職 */
 function sRetire(){
@@ -2328,8 +2407,8 @@ function cardsFor(mode){var e=G.ending,c=[],F=G.fam||{kids:[],parents:[]},fl=F2(
   var sup=fl.supported||(G.mem||[]).some(function(m){return m.who==='supporter'});
   // 1 最後の日
   if(death){var near=aliveNear.slice(0,1).concat(sup?['clerk']:[]);
-    c.push({age:A,head:'最期の朝',sc:{id:'stage',par:{bg:'bedroom',actors:[{w:'hero',x:22,y:38,a:'lie'}].concat(near.map(function(w,i){return {w:w,x:64+i*24,a:'stand',dir:-1}})),once:true,dur:2600}},
-      who:'',txt:[near.length?'窓の外に、朝の光が差していた。':'窓の外に、朝の光が差していた。静かな朝だった。',near.length?(near[0]==='clerk'?'支援者が、そばにいた。':'そばに、'+(near[0]==='sp'?F.spouse.name:F.kids[near[0]==='kid'?0:1].name)+'がいた。'):'最後の時間を、自分の部屋で過ごした。'],tag:'最後の日'})}
+    c.push({age:A,head:'最期の朝',sc:{id:G.goal.view||'forest',par:{}},
+      who:'',txt:[near.length?'窓の外に、朝の光が差していた。':'窓の外に、朝の光が差していた。静かな朝だった。',near.length?(near[0]==='clerk'?'支援者が、そばにいた。':'そばに、'+(near[0]==='sp'?F.spouse.name:F.kids[near[0]==='kid'?0:1].name)+'がいた。'):'最後の時間を、自分の部屋で過ごした。'],tag:'最後の日'});var BD=G.bed;if(BD){var bl=BD.k==='quiet'?['何も語らず、静かな時間が流れた。','窓の光が、ゆっくりと動いていった。']:[(BD.k==='dream'?'まだ、やってみたかったこと。':BD.k==='meet'?'会いたい人、伝えたいこと。':BD.k==='joy'?'楽しかったことを、思い出していた。':'最後に残した言葉。')].concat(BD.pick?['「'+BD.pick+'」']:[]).concat(BD.text?['「'+BD.text+'」']:[]);if(bl.length===1&&BD.k!=='quiet')bl.push('言葉にはしなかった。それでも、心の中にあった。');c.push({age:A,head:'最後に、心に浮かんだこと',dur:Math.max(9000,2600+bl.join('').length*260),sc:{id:'dusk',par:{view:G.goal.view||'forest',dur:9000}},who:'',txt:bl,tag:'最後の回想'})}}
   else if(e.type==='achieved')c.push({age:A,head:'なりたいあなたに、たどり着いた朝',sc:{id:G.goal.view||'forest',par:{}},who:'',txt:['「'+G.goal.text+'」','開始のときに描いた暮らしの中で、目を覚ました。'],tag:'到達'});
   else c.push({age:A,head:'目標を手放した夜',sc:{id:'stage',par:{bg:'desk',night:true,actors:[{w:'hero',x:58,a:'write'}],props:['notebook'],loop:true}},who:'',txt:['準備していたものを整理して、','続けたい暮らしの予定を、手帳に残した。'],tag:'選び直し'});
   // 2 静かな別れ
