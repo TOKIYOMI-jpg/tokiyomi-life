@@ -16,6 +16,11 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.choices button.on::before{content:'✓';display:inline-block;margin-right:.35em;font-weight:800}
+.choices button[style*="background"].on::before{color:#fff}
+.qprog{display:flex;align-items:center;gap:10px}.qprog span{font-size:12.5px;color:var(--mist);letter-spacing:.06em}
+.startage{margin:2px 0 0;font-family:var(--f-display);font-size:17px;color:var(--gold);min-height:1.4em}
+.axmean dl{margin:0;display:grid;grid-template-columns:5em 1fr;gap:6px 10px;font-size:13px}.axmean dt{color:var(--gold);font-weight:700}.axmean dd{margin:0;color:var(--mist)}
 .nudge{margin:4px 0 0;font-size:13.5px;font-weight:700;color:#e6c34a;animation:nudgein .35s ease-out}@keyframes nudgein{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
 .needfix{outline:2px solid #e6c34a;outline-offset:6px;border-radius:12px}input.needfix{outline-offset:2px}
 /* v36.21：必須項目の文字入力欄は黄色の罫線 */
@@ -30,9 +35,16 @@ input.req,textarea.req{border:1.5px solid #e6c34a!important}input.req:focus{outl
   .hud{position:static!important;backdrop-filter:none!important;background:transparent!important;padding-block:6px!important;gap:6px!important}
   .hud .hudtop{display:none!important}
   .hud #pp{display:none!important}
-  .chip{font-size:12px;padding:1px 8px}
-  .ctrl .sp button{padding:5px 8px;font-size:12px}.ctrl .sp small{display:none}
+  .chip{font-size:12px!important;padding:0 8px!important;line-height:1.6}
+  .ctrl .sp button{padding:3px 10px!important;font-size:12.5px!important;line-height:1.4!important}.ctrl .sp small{display:none}
+  .hud{gap:4px!important;padding-block:4px!important}
   .spdesc{display:none!important}
+  .chip.sat{display:none}
+  .indbox>summary{align-items:center}.indbox .sumv{margin-left:auto;margin-right:8px;font-family:var(--f-display);color:var(--gold);font-size:15px}
+  .tablewrap{overflow:visible}.tablewrap table{min-width:0}.tablewrap thead{display:none}
+  .tablewrap tr{display:block;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px}
+  .tablewrap td{display:block;border:0;padding:2px 0}.tablewrap td::before{content:attr(data-l);display:block;font-size:11px;color:var(--gold)}
+  .tablewrap td:empty{display:none}
 }
 
 .feed li.auto .t small{color:var(--gold)}
@@ -146,7 +158,7 @@ input{font:inherit;color:var(--moon);background:var(--night);border:1px solid va
 /* カード */
 .spread{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 @media (max-width:640px){.spread{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.card{perspective:900px;position:relative}
+.card{perspective:900px;position:relative;display:flex}.card .in{flex:1}
 .card .in{display:grid;width:100%;min-height:260px;transition:transform .7s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}
 .card.open .in{transform:rotateY(180deg)}
 .card .face{grid-area:1/1;position:relative;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;border:1px solid var(--gold-dim);display:flex;flex-direction:column}
@@ -372,6 +384,7 @@ var DATAMAP=[
 /* 8分野（v36：2026-10-26決定の名前と順番。内部キーは保存データとの互換のため据え置き：family＝繋がり、social＝貢献、learn＝学び、freedom＝自由） */
 var AXES=[['work','仕事'],['family','繋がり'],['hobby','趣味'],['health','健康'],['social','貢献'],['money','お金'],['learn','学び'],['freedom','自由']];
 var AXLOOK={work:'働き方、やりがい、自分の役割',family:'家族・友人・地域・趣味の仲間など、自分が望む距離の関係（人数や結婚の有無では評価しない）',hobby:'遊び、旅行、創作、楽しみ',health:'心と体、食事、睡眠、運動',social:'支え合い、人の役に立つこと、次世代に伝えること',money:'収入、支出、貯蓄、経済的な安心',learn:'学び直し、挑戦、知識や経験',freedom:'自分のペースで、時間や暮らし方を選べること'};
+var AXSHORT={work:'働き方・やりがい',family:'家族・友人・地域との関係',hobby:'遊び・旅・楽しみ',health:'心と体',social:'人の役に立つこと',money:'暮らしの安心',learn:'学び・挑戦',freedom:'自分のペースで暮らす'};
 var AXPH={work:'例：週3日、経験を生かして働いている',family:'例：気の合う人と、ほどよい距離で会えている',hobby:'例：年に一度は旅に出て、月に一度は釣りに行ける',health:'例：よく眠れて、週に何度か体を動かしている',social:'例：地域で頼りにされ、経験を若い人に伝えている',money:'例：老後の暮らしに不安がない',learn:'例：毎年ひとつ新しいことに挑戦している',freedom:'例：朝の過ごし方を、自分で決められている'};
 var AXN={};AXES.forEach(function(a){AXN[a[0]]=a[1]});
 var MODES={hard:'ハード',natural:'ナチュラル',soft:'ソフト',omakase:'おまかせ'};
@@ -1464,30 +1477,32 @@ function vAsk(){var Q=QS[G.q],p=G.p;
 
 
 /* ---- v36：はじめの4問（まず遊べる。必要になったら聞く） ---- */
-var Q4N=4;
+var Q4N=4,top3Lbl=0;
+function startTxt(a){a=Math.max(40,Math.min(100,Math.round(+a)));return isNaN(a)?'':a+'歳でスタート'}
+function nextLbl(i){return i===Q4N-1?'旅をはじめる':i===2&&!(G.top3||[]).length?'選ばずにつぎへ':'つぎへ'}
 function vAsk4(){var p=G.p,i=G.q||0,body='',say='';G.top3=G.top3||[];
-  if(i===0){say='まずは、今のあなたの年齢を教えて。';body=block('age','いまの年齢（必須）',[[40,'40代前半'],[45,'40代後半'],[50,'50代前半'],[55,'50代後半'],[60,'60代前半'],[65,'60代後半'],[70,'70代']],p.age,'ちょうどの年齢（例 48歳）')}
+  if(i===0){say='まずは、今のあなたの年齢を教えて。';body=block('age','いまの年齢（必須）',[[40,'40代前半'],[45,'40代後半'],[50,'50代前半'],[55,'50代後半'],[60,'60代前半'],[65,'60代後半'],[70,'70代']],p.age,'ちょうどの年齢（例 48歳）')+'<p class="startage" id="sa">'+(p.age?startTxt(p.age):'')+'</p>'}
   else if(i===1){say='これから、どんな暮らしをしたい？';body='<div class="qblock"><span class="qlabel">なりたいあなたを、ひとことで（必須）</span><input id="gtext" class="req" maxlength="80" value="'+esc(G.goal.text||'')+'" placeholder="例：海の見える町で、週3日だけ好きな仕事をしている"></div>'+
     block('view','思い浮かぶ景色（任意）',[['sea','海辺'],['forest','森と湖'],['field','田畑'],['town','町のお店'],['home','家族の家']],G.goal.view)+'<canvas id="pv" class="pix" width="160" height="90" aria-label="ゴールの景色のドット絵"></canvas>'+
     '<details class="box"'+(G.wishT?' open':'')+'><summary>一度はかなえたいこと（任意）</summary><div class="inner"><div class="choices" id="wt">'+WISHT.map(function(w){return '<button data-v="'+w[0]+'" class="'+(G.wishT===w[0]?'on':'')+'">'+w[1]+'<small>'+w[2]+'</small></button>'}).join('')+'</div><input id="wtx" maxlength="60" value="'+esc(G.wishX||'')+'" placeholder="'+(G.wishT?wishOf(G.wishT)[3]:'例：元気なうちに北海道を旅したい')+'"><p class="small muted">書いておくと、旅の途中で、かなえるための分かれ道が出てきます。</p></div></details>'+
     '<p class="small muted">いつまでに、いくらあれば、などは決めなくて大丈夫。旅の途中で変えることもできます。</p>'}
-  else if(i===2){say='あなたにとって、大切なものは？　3つまで選んでね（任意）。';body='<div class="choices" id="top3">'+AXES.map(function(a){return '<button data-t="'+a[0]+'" class="'+(G.top3.indexOf(a[0])>=0?'on':'')+'">'+a[1]+'<small>'+AXLOOK[a[0]]+'</small></button>'}).join('')+'</div><p class="small muted">選んだものは、場面の選び方と「重要度」に使います。点数（充足度）は、あなたが確かめるまで「未評価」のままです。</p>'}
-  else{say='今の暮らしは、あなたの理想にどのくらい近い？';body='<span class="qlabel">ひとつ選んでね（必須）</span><div class="choices" id="nr">'+NEAR.map(function(x){return '<button data-v="'+x[0]+'" class="'+(G.near0&&G.near0.v===x[0]?'on':'')+'">'+x[1]+'</button>'}).join('')+'<button data-v="null" class="'+(G.near0&&G.near0.v==null?'on':'')+'">わからない</button></div><p class="small muted">これは、暮らし全体の実感として別に残します。八つの分野の点数には入れません。</p>'}
-  set('<section class="panel"><div class="dots">'+[0,1,2,3].map(function(k){return '<i class="'+(k<=i?'on':'')+'"></i>'}).join('')+'</div>'+miya(say)+body+
-   '<div class="actions"><button class="gold" id="next">'+(i<Q4N-1?'つぎへ':'旅をはじめる')+'</button><button class="ghost" id="back">もどる</button></div><p class="small muted" id="msg"></p></section>');
+  else if(i===2){say='あなたにとって、大切なものは？　3つまで選んでね（任意）。';top3Lbl=1;body='<div class="qblock"><div class="choices" id="top3">'+AXES.map(function(a){return '<button data-t="'+a[0]+'" class="'+(G.top3.indexOf(a[0])>=0?'on':'')+'">'+a[1]+'<small>'+AXSHORT[a[0]]+'</small></button>'}).join('')+'</div></div><details class="box axmean"><summary>それぞれの意味を見る</summary><div class="inner"><dl>'+AXES.map(function(a){return '<dt>'+a[1]+'</dt><dd>'+AXLOOK[a[0]]+'</dd>'}).join('')+'</dl></div></details><p class="small muted">選んだものは、場面の選び方と「重要度」に使います。点数（充足度）は、あなたが確かめるまで「未評価」のままです。</p>'}
+  else{say='今の暮らしは、あなたの理想にどのくらい近い？';body='<div class="qblock"><span class="qlabel">ひとつ選んでね（必須）</span><div class="choices" id="nr">'+NEAR.map(function(x){return '<button data-v="'+x[0]+'" class="'+(G.near0&&G.near0.v===x[0]?'on':'')+'">'+x[1]+'</button>'}).join('')+'<button data-v="null" class="'+(G.near0&&G.near0.v==null?'on':'')+'">わからない</button></div></div><p class="small muted">これは、暮らし全体の実感として別に残します。八つの分野の点数には入れません。</p>'}
+  set('<section class="panel"><div class="qprog"><div class="dots">'+[0,1,2,3].map(function(k){return '<i class="'+(k<=i?'on':'')+'"></i>'}).join('')+'</div><span>質問 '+(i+1)+'／'+Q4N+'</span></div>'+miya(say)+body+
+   '<div class="actions"><button class="gold" id="next">'+nextLbl(i)+'</button><button class="ghost" id="back">もどる</button></div><p class="small muted" id="msg"></p></section>');
   app.querySelectorAll('.qblock[data-id]').forEach(function(bl){var id=bl.dataset.id;bl.querySelectorAll('button[data-v]').forEach(function(b){b.onclick=function(){var v=b.dataset.v;v=isNaN(+v)?v:+v;
-      if(id==='view'){G.goal.view=v;startPix($('pv'),v)}else p[id]=v;bl.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});var o=bl.querySelector('[data-other]');if(o)o.value='';save()}});
-    var o=bl.querySelector('[data-other]');if(o)o.oninput=function(){if(o.value==='')return;p[id]=+o.value;bl.querySelectorAll('button').forEach(function(x){x.classList.remove('on')});save()}});
+      if(id==='view'){G.goal.view=v;startPix($('pv'),v)}else p[id]=v;if(id==='age'&&$('sa'))$('sa').textContent=startTxt(v);bl.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});var o=bl.querySelector('[data-other]');if(o)o.value='';save()}});
+    var o=bl.querySelector('[data-other]');if(o)o.oninput=function(){if(o.value==='')return;p[id]=+o.value;if(id==='age'&&$('sa'))$('sa').textContent=startTxt(+o.value);bl.querySelectorAll('button').forEach(function(x){x.classList.remove('on')});save()}});
   if($('pv'))startPix($('pv'),G.goal.view||'forest');
+  if($('gtext'))$('gtext').oninput=function(){G.goal.text=this.value;save()};
   if($('wt'))$('wt').querySelectorAll('button').forEach(function(b){b.onclick=function(){var v=b.dataset.v;G.wishT=G.wishT===v?null:v;$('wt').querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b&&G.wishT===v)});$('wtx').placeholder=G.wishT?wishOf(G.wishT)[3]:'例：元気なうちに北海道を旅したい';save()}});
   if($('wtx'))$('wtx').oninput=function(){G.wishX=this.value;save()};
-  if($('top3'))$('top3').querySelectorAll('button').forEach(function(b){b.onclick=function(){var k=b.dataset.t,j=G.top3.indexOf(k);if(j>=0)G.top3.splice(j,1);else{if(G.top3.length>=3){$('msg').textContent='3つまで選べます。外したいものを先に押してね。';return}G.top3.push(k)}$('msg').textContent='';b.classList.toggle('on',j<0);save()}});
+  if($('top3'))$('top3').querySelectorAll('button').forEach(function(b){b.onclick=function(){var k=b.dataset.t,j=G.top3.indexOf(k);if(j>=0)G.top3.splice(j,1);else{if(G.top3.length>=3){$('msg').textContent='3つまで選べます。外したいものを先に押してね。';return}G.top3.push(k)}$('msg').textContent='';b.classList.toggle('on',j<0);$('next').textContent=nextLbl(i);save()}});
   if($('nr'))$('nr').querySelectorAll('button').forEach(function(b){b.onclick=function(){var v=b.dataset.v==='null'?null:+b.dataset.v;G.near0={v:v,l:v==null?'わからない':NEAR.filter(function(x){return x[0]===v})[0][1]};$('nr').querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});save()}});
-  $('back').onclick=function(){if(i===0)G.phase='title';else G.q=i-1;render()};
+  $('back').onclick=function(){if($('gtext'))G.goal.text=$('gtext').value;if($('wtx'))G.wishX=$('wtx').value;save();if(i===0)G.phase='title';else G.q=i-1;render()};
   $('next').onclick=function(){
     if(i===0){if(p.age==null||isNaN(p.age)){nudge(app.querySelector('.qblock[data-id=age]'),'年齢を選んでね。');return}p.age=Math.max(40,Math.min(100,Math.round(p.age)))}
     if(i===1){G.wishX=$('wtx')?$('wtx').value.trim():'';G.goal.text=$('gtext').value.trim();if(!G.goal.text){nudge($('gtext'),'ひとことだけ書いてみて。まだ分からなければ「まだ分からない」でも大丈夫。');return}G.goal.scene=G.goal.scene||{}}
-    if(i===2&&!G.top3.length&&!this.dataset.c){this.dataset.c=1;nudge($('top3'),'選ばなくても進めます。もう一度押すと、このまま進みます。');return}
     if(i===3&&!G.near0){nudge($('nr'),'近いものを選んでね。分からなければ「わからない」で大丈夫。');return}
     if(i<Q4N-1){G.q=i+1;render();return}
     G.quick=true;G.axes=defaultAxes();axesAuto();start()};
@@ -1783,7 +1798,7 @@ function migrate(g){if(g&&g.axes)AXES.forEach(function(p){if(!g.axes[p[0]])g.axe
 var NEAR=[[30,'まだ遠い'],[60,'半分くらい'],[90,'ほぼ理想']];
 function axesAuto(){if(G.axesManual)return;var t=G.top3||[];AXES.forEach(function(p){var a=G.axes[p[0]];var top=t.indexOf(p[0])>=0;a.imp=top?5:2;a.min=top?40:0})}
 function vAxes(){if(G.axesDetail)return vAxesFull();var moneyCalc=!!G.goal.money;G.top3=G.top3||[];axesAuto();
-  set('<section class="panel"><div class="dots">'+QS.map(function(){return '<i class="on"></i>'}).join('')+'<i class="on"></i></div>'+
+  set('<section class="panel">'+(G.reviewFromPlay?'<span class="latin">Review</span>':'<div class="dots">'+QS.map(function(){return '<i class="on"></i>'}).join('')+'<i class="on"></i></div>')+
    miya('その中で、一番手放したくないものは？<br><span class="small muted">八つの分野の「理想の状態」と、今の暮らしがそれにどれくらい近いかを教えてね。書けないところは空けたままで大丈夫。</span>')+
    '<div style="display:flex;flex-direction:column;gap:12px">'+AXES.map(function(p){var k=p[0],a=G.axes[k];
      return '<div class="ax" data-k="'+k+'"><span class="nm">'+p[1]+'<span class="look">'+AXLOOK[k]+'</span></span><div class="rows">'+
@@ -1809,7 +1824,7 @@ function vAxes(){if(G.axesDetail)return vAxesFull();var moneyCalc=!!G.goal.money
 }
 function vAxesFull(){
   var moneyCalc=!!G.goal.money;
-  set('<section class="panel"><div class="dots">'+QS.map(function(){return '<i class="on"></i>'}).join('')+'<i class="on"></i></div>'+
+  set('<section class="panel">'+(G.reviewFromPlay?'<span class="latin">Review</span>':'<div class="dots">'+QS.map(function(){return '<i class="on"></i>'}).join('')+'<i class="on"></i></div>')+
    miya('その中で、一番手放したくないものは？<br><span class="small muted">八つの分野それぞれに、「理想の状態」（書けるところだけ）と、充足度・重要度（★）・最低許容ラインを決めてね。</span>')+
    '<div id="axl" style="display:flex;flex-direction:column;gap:12px">'+AXES.map(function(p){var k=p[0],a=G.axes[k];
      return '<div class="ax'+(a.active===false?' off':'')+'" data-k="'+k+'"><span class="nm">'+p[1]+'<span class="look">'+AXLOOK[k]+'</span></span><div class="rows">'+
@@ -1876,7 +1891,7 @@ function reasonText(g,j){
 
 /* ---- 旅 ---- */
 function hud(){var c=chipJ(G);return '<div class="hudmini" id="hudmini"><span class="age num">'+G.age+'<small>歳</small></span><span class="yr">'+yearOf(G.age)+'</span><span class="mpace">'+PACE[G.pace||'normal'].label+'</span><button class="gold" id="pp2">'+(G.playing?'❚❚ 止める':'▶ 進める')+'</button></div><div class="hud" id="hud"><div class="hudtop"><span class="age num">'+G.age+'<small>歳</small></span><span class="yr">'+yearOf(G.age)+'</span></div>'+
-  '<div class="chips"><span class="chip">資産 '+(G.unk&&G.unk.money?'不明':man(G.res.assets))+'</span><span class="chip">自由時間 '+(G.unk&&G.unk.work?'不明':'週'+fmtH(freeH(G))+'h')+'</span><span class="chip">体力 '+ENERGY[G.energy]+'</span>'+(stressTxt()?'<span class="chip ng">ストレス '+stressTxt()+'</span>':'')+'<span class="chip '+c[0]+'">'+c[1]+'</span></div>'+
+  '<div class="chips"><span class="chip">資産 '+(G.unk&&G.unk.money?'不明':man(G.res.assets))+'</span><span class="chip">自由時間 '+(G.unk&&G.unk.work?'不明':'週'+fmtH(freeH(G))+'h')+'</span><span class="chip">体力 '+ENERGY[G.energy]+'</span>'+(stressTxt()?'<span class="chip ng">ストレス '+stressTxt()+'</span>':'')+'<span class="chip sat '+c[0]+'">'+c[1]+'</span></div>'+
   '<div class="ctrl"><button class="gold" id="pp">'+(G.playing?'❚❚ 止める':'▶ 進める')+'</button><div class="sp">'+['slow','normal','fast','turbo','demo'].map(function(k){return '<button data-sp="'+k+'" class="'+((G.pace||'normal')===k?'on':'')+'" title="40歳から100歳までの目安 '+PACE[k].min+'">'+PACE[k].label+'<small> '+PACE[k].min.replace('約','')+'</small></button>'}).join('')+'</div></div><p class="spdesc small muted">'+SPDESC[G.pace||'normal']+'</p></div>'}
 function renderHud(){var h=$('hud');if(!h)return;var m=$('hudmini');if(m)m.remove();h.outerHTML=hud();bindHud()}
 function bindHud(){var busy=G.queue.length>0;$('pp').disabled=busy;if($('pp2'))$('pp2').disabled=busy;
@@ -1884,11 +1899,15 @@ function bindHud(){var busy=G.queue.length>0;$('pp').disabled=busy;if($('pp2'))$
   app.querySelectorAll('[data-sp]').forEach(function(b){b.onclick=function(){G.pace=b.dataset.sp;G.speed=PACE[G.pace].ms;save();renderHud();if(G.playing)loop()}})}
 /* v36.18：スマホでは、人生満足度とチャートを場面の下にたたんで置く（開くと見られる） */
 var IND_OPEN=false;
+/* v36.27：「八つの分野」の箱。スマホでは場面のすぐ下に1つだけ置き、満足度とチャートと見直しボタンをまとめる */
+function axBox(mob){var j=judge(G),act=(j.status==='ng'?'<div class="actions"><button id="fix">ラインを取り戻す道を探す</button><button id="rev">分野とラインを見直す</button></div>':'<div class="actions"><button id="rev">分野とラインを見直す</button></div>');
+  if(mob)return '<details class="box indbox" id="indbox"'+(IND_OPEN?' open':'')+'><summary><span>人生満足度と八つの分野</span><span class="sumv">'+(j.S==null?'未評価':fmtS(j.S))+'</span></summary><div class="inner">'+radar(G)+legend()+judgeHTML(G)+act+'</div></details>';
+  return '<details class="box"><summary>八つの分野と、大切にしたいこと</summary><div class="inner">'+radar(G)+legend()+judgeHTML(G)+act+'</div></details>'}
 /* v36.23：未入力で次へ進めないときは、その欄まで画面を動かし、すぐ近くに案内を出す。文字の欄にはカーソルを置く */
 function nudge(el,msg){if(!el){var m=$('msg')||$('fmsg');if(m)m.textContent=msg;return}
   app.querySelectorAll('.nudge').forEach(function(x){x.remove()});app.querySelectorAll('.needfix').forEach(function(x){x.classList.remove('needfix')});
   var box=el.closest('.qblock')||el;box.classList.add('needfix');var tip=document.createElement('p');tip.className='nudge';tip.setAttribute('role','alert');tip.textContent=msg;
-  if(el.tagName==='INPUT'||el.tagName==='TEXTAREA')el.insertAdjacentElement('afterend',tip);else box.insertAdjacentElement('afterbegin',tip);
+  if(el.tagName==='INPUT'||el.tagName==='TEXTAREA')el.insertAdjacentElement('afterend',tip);else if(box.classList.contains('choices'))box.insertAdjacentElement('beforebegin',tip);else{var lb=box.querySelector(':scope>.qlabel');if(lb)lb.insertAdjacentElement('afterend',tip);else box.insertAdjacentElement('afterbegin',tip)}
   var m2=$('msg')||$('fmsg');if(m2)m2.textContent='';
   try{box.scrollIntoView({block:'center'})}catch(e){box.scrollIntoView()}
   if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){try{el.focus({preventScroll:true})}catch(e){el.focus()}}
@@ -1901,10 +1920,9 @@ function vPlay(){
   var sc=sceneFor(it);
   var mob=isMob(),indA='<aside class="ind" id="ind" aria-label="人生満足度と八つの分野">'+indHTML(it)+'</aside>';
   set(hud()+'<div class="stagewrap"><canvas id="scr" class="pix big" width="160" height="90" aria-label="いまの場面のドット絵"></canvas>'+(mob?'':indA)+'</div><div class="caprow"><p class="cap">'+esc(sc.cap)+'</p></div><div id="stage"></div>'+
-   (mob?'<details class="box indbox" id="indbox"'+(IND_OPEN?' open':'')+'><summary>人生満足度と八つの分野　<span class="small muted">'+fmtS(judge(G).S)+'</span></summary><div class="inner">'+indA+'</div></details>':'')+
+   (mob?axBox(true):'')+
    '<details class="box" open><summary>人生の記録</summary><div class="inner"><ol class="feed">'+G.feed.slice(-40).reverse().map(function(e){return '<li class="'+e.kind+(e.auto?' auto':'')+'"><span class="a">'+e.age+'歳</span><span class="t">'+esc(e.text)+(e.sub?'<small>'+esc(e.sub)+'</small>':'')+'</span></li>'}).join('')+'</ol></div></details>'+
-   '<details class="box"><summary>八つの分野と、大切にしたいこと</summary><div class="inner">'+radar(G)+legend()+judgeHTML(G)+
-     (judge(G).status==='ng'?'<div class="actions"><button id="fix">ラインを取り戻す道を探す</button><button id="rev">分野とラインを見直す</button></div>':'<div class="actions"><button id="rev">分野とラインを見直す</button></div>')+'</div></details>'+
+   (mob?'':axBox(false))+
    '<div class="menu"><button id="mm">お金の前提を見直す</button><button id="mw">もしもの出費を試す</button><button id="mh">もしもの病気・事故を試す</button><button id="mg">目標を変える</button><button id="mr">目標に到達した</button><button id="ma">あきらめる</button><button id="mp">休む（保存して中断）</button><button id="mi">ファイルに保存</button><button id="ms">出典とルール</button></div>');
   bindHud(); startScene($('scr'),sc.id,sc.par); bindInd();if($('indbox'))$('indbox').ontoggle=function(){IND_OPEN=this.open};if(TO_TOP){TO_TOP=0;scrTop()}
   if(it){pauseSilently();({div:sDiv,gstep:sGstep,fact:sFact,look:sLook,theme:sTheme,wish:sWish,whatill:sWhatIll,lib:sLib,whatif:sWhatif,voice:sVoice,feel:sFeel,ev:sEv,joy:sJoy,loss:sLoss,kidMarry:sKid,branch:sBranch,review:sReview,body:sBody,retire:sRetire,deadline:sDeadline,goal:sGoal,reach:sReach,give:sGive}[it.type])(it);if(G.queue[0]===it&&G.phase==='play')autoArm(it)}
@@ -2329,13 +2347,13 @@ function cardsFor(mode){var e=G.ending,c=[],F=G.fam||{kids:[],parents:[]},fl=F2(
   var used={},usedL={},voices=[];(G.mem||[]).slice().reverse().forEach(function(m){var sp=speakerOf(m);if(!sp||used[sp.lbl]||voices.length>=(mode==='long'?8:6))return;if(UNRES[m.kind]===m.i)return;var ln=(VL[m.kind]||[])[m.i];if(!ln||usedL[ln])return;used[sp.lbl]=1;usedL[ln]=1;voices.push({m:m,sp:sp,ln:ln})});
   voices.reverse().forEach(function(v){var bg=libScene(memTitle(v.m)).bg;c.push({age:v.m.age,head:v.m.age+'歳　'+memTitle(v.m),sc:{id:'stage',par:{bg:bg==='desk'?'table':bg,actors:[{w:'hero',x:44,a:'talk'},{w:v.sp.cast,x:92,a:'talk',dir:-1}],bubble:true,loop:true}},who:v.sp.lbl,txt:['「'+v.ln+'」'],ev:v.m.age+'歳の出来事の記録から',tag:'残された声'})});
   if(!voices.length)c.push({age:A,head:'残された声',sc:{id:'stage',par:{bg:'street',actors:[]}},who:'',txt:[(G.steps||[]).length?'手帳には、本人の字で予定が残っていた。':'暮らしていた街の風景が、その人の時間を覚えている。','語る人が少なくても、過ごした一日一日は確かにあった。'],tag:'残された声'});
-  if(mode==='long'){var dr0=firstDream();c.push({age:G.startAge,head:'はじめに描いた夢',dur:Math.max(8000,2600+dr0.length*320),sc:{id:G.goal.view||'forest',par:{}},who:'',txt:['「'+dr0+'」'],ev:'はじめに描いた夢',tag:'本人の言葉'});var W=G.wish;if(W&&W.doneAt!=null){var ws=wishScene({go:1});c.push({age:W.doneAt,head:'一度はかなえたいこと',dur:9000,sc:{id:ws.id,par:ws.par},who:'',txt:['「'+W.text+'」',W.doneAt+'歳で、かなえた。'+(W.felt?'　'+W.felt:'')],ev:'一度はかなえたいこと',tag:'あなたの記録'})}}
+  if(mode==='long'){var dr0=firstDream();c.push({age:G.startAge,head:'はじめに描いた夢',dur:Math.max(8000,2600+dr0.length*320),sc:{id:G.goal.view||'forest',par:{}},who:'',txt:['「'+dr0+'」'],ev:'はじめに描いた夢',tag:'本人の言葉'});var W=G.wish;if(W&&W.doneAt!=null){var ws=wishScene({go:1});c.push({age:W.doneAt,head:'一度はかなえたいこと',dur:9000,sc:{id:ws.id,par:ws.par},who:'',txt:['「'+W.text+'」',W.doneAt+'歳で、かなえた。'+(W.felt?'　'+W.felt:'')],tag:'あなたの記録'})}}
   // 4 走馬灯（40歳以降の履歴のみ。習慣・迷い・支援・未完も含める）
   var hi=G.feed.filter(function(f){return (f.kind==='pick'||f.kind==='big')&&!/亡くな|旅が始まる|最低ライン|期限|充足度|実感|言葉|ひと休み|目標を変えた|退職の日|予定していた支出|そのまま過ぎ/.test(f.text+(f.sub||''))&&!/テスト/.test(f.text)});
   var vAges={};voices.forEach(function(v){vAges[v.m.age]=1});var seen={},flash=[],FM=Math.max(2,(mode==='long'?20:13)-(c.length+4));
   ['結婚','孫','店','旅','学','退職','還暦','古希','米寿','白寿','百寿','介護','まとまらなかった','支援','歩'].forEach(function(k){var f=hi.filter(function(x){return (x.text+(x.sub||'')).indexOf(k)>=0&&!seen[x.age+x.text]&&!vAges[x.age]})[0];if(f&&flash.length<FM){seen[f.age+f.text]=1;flash.push(f)}});
   hi.slice().reverse().forEach(function(f){if(flash.length<FM&&!seen[f.age+f.text]&&!vAges[f.age]){seen[f.age+f.text]=1;flash.push(f)}});
-  flash.sort(function(x,y){return x.age-y.age}).forEach(function(f){var t=f.text.replace(/を選んだ$/,'').replace(/^「|」$/g,''),sc=sceneForText(f.text+' '+(f.sub||''));c.push({age:f.age,head:f.age+'歳　'+(f.kind==='pick'&&f.sub&&!/ハード|ナチュラル|ソフト|おまかせ|ゲーム上|あなた/.test(f.sub)?f.sub:t),sc:sc,who:'',txt:[f.kind==='pick'?'「'+t+'」を選んだ。':t+'。'],tag:'回想'})});
+  flash.sort(function(x,y){return x.age-y.age}).forEach(function(f){var t=f.text.replace(/を選んだ$/,'').replace(/^「([^「」]*)」$/,'$1'),sc=sceneForText(f.text+' '+(f.sub||''));c.push({age:f.age,head:f.age+'歳'+(f.kind==='pick'&&f.sub&&!/ハード|ナチュラル|ソフト|おまかせ|ゲーム上|あなた|自動/.test(f.sub)?'　'+f.sub.split('・')[0]:''),sc:sc,who:'',txt:[f.kind==='pick'?'「'+t+'」を選んだ。':t.replace(/。$/,'')+'。'],tag:'回想'})});
   // 4+ 誰かのために、自分のために（記録された行動のみ。採点しない）
   var gsc=giveSum();if(gsc.help.length+gsc.self.length+gsc.trouble.length+gsc.received.length){var gh=gsc.help.slice(-1)[0],gt=gsc.trouble.slice(-1)[0];
     c.push({age:A,head:'誰かのために、自分のために',sc:{id:'stage',par:{bg:gsc.help.length?'hall':'room',actors:[{w:'hero',x:44,a:gsc.help.length?'give':'read'}].concat(gsc.help.length?[{w:'friend',x:92,a:'receive',dir:-1}]:[]),loop:true}},who:'',
@@ -2381,7 +2399,7 @@ function vFilm(){
   set('<section class="film2"><div class="fhead"><span>TOKIYOMI／時詠 · あなたが生きた時間</span><span class="num">'+String(i+1).padStart(2,'0')+' / '+N+'</span></div>'+
    '<div class="fpic">'+(X.chart?'<div class="fchart">'+satChart()+'</div>':'<canvas id="fc" class="pix" width="160" height="90" aria-label="'+esc(X.head)+'の場面"></canvas>')+'</div>'+
    '<div class="ftitle">'+esc(X.head)+'</div><div class="fbody">'+(X.who?'<span class="who">'+esc(X.who)+'</span>':'<span class="who muted">'+esc(X.tag)+'</span>')+'<div class="ftxt" aria-live="polite">'+X.txt.map(function(t){return '<p>'+esc(t)+'</p>'}).join('')+'</div>'+
-   (X.note?'<p class="small muted">'+esc(X.note)+'</p>':'')+(X.ev?'<p class="small muted">'+esc(X.ev)+'・記録された発言ではなく、履歴をもとにした語りです</p>':'')+
+   (X.note?'<p class="small muted">'+esc(X.note)+'</p>':'')+(X.ev&&X.ev!==X.head?'<p class="small muted">'+esc(X.ev)+'・記録された発言ではなく、履歴をもとにした語りです</p>':'')+
    '<div class="fbar"><i style="width:'+((i+1)/N*100)+'%"></i></div>'+
    '<div class="fctl"><button id="fb" '+(i?'':'disabled')+'>戻る</button><button id="fp">'+(G.filmPaused?'▶ 再生':'❚❚ 停止')+'</button><button class="gold" id="fn">'+(X.last?'記録をひらく':'次へ')+'</button><span class="sp">'+['slow','normal','fast'].map(function(k){return '<button data-fs="'+k+'" class="'+((G.filmSpd||'normal')===k?'on':'')+'">'+{slow:'ゆっくり',normal:'ふつう',fast:'はやめ',turbo:'いそぎ'}[k]+'</button>'}).join('')+'</span><button class="ghost" id="fs">スキップ</button></div></div></section>');
   if(!X.chart)startScene($('fc'),X.sc.id,X.sc.par);
@@ -2398,9 +2416,9 @@ function endPlayer(){var C=G.endCards||(G.endCards=cardsFor('long').filter(funct
   var show=function(k){i=k;var X=C[k];if(X.final){X=finalCard();X.final=true;C[k]=X}FILM_AGE=X.age;
     if(X.chart){startScene($('ev'),'stage',{bg:'lake',actors:[]})}else startScene($('ev'),X.sc.id,X.sc.par);
     $('epn').textContent=String(k+1).padStart(2,'0')+' / '+N;
-    $('epcap').innerHTML='<div class="ept">'+esc(X.head)+'</div>'+(X.who?'<span class="who">'+esc(X.who)+'</span>':'')+(X.tag==='本人の言葉'?'':X.txt.map(function(t){return '<p>'+esc(t)+'</p>'}).join(''))+(X.ev&&X.tag!=='本人の言葉'?'<p class="small muted">'+esc(X.ev)+(X.tag==='本人の言葉'||X.tag==='思い出'?'':'・履歴をもとにした語り')+'</p>':'');
+    $('epcap').innerHTML='<div class="ept">'+esc(X.head)+'</div>'+(X.who?'<span class="who">'+esc(X.who)+'</span>':'')+(X.tag==='本人の言葉'?'':X.txt.filter(function(t){var h=(X.head||'').replace(/^\d+歳\s*/,'').replace(/[「」。]/g,'');return !h||t.replace(/[「」。]/g,'')!==h}).map(function(t){return '<p>'+esc(t)+'</p>'}).join(''))+(X.ev&&X.ev!==X.head&&X.tag!=='本人の言葉'?'<p class="small muted">'+esc(X.ev)+(X.tag==='本人の言葉'||X.tag==='思い出'?'':'・履歴をもとにした語り')+'</p>':'');
     $('epbar').style.width=((k+1)/N*100)+'%';
-    var tel=$('eptel');if(tel){if(X.tag==='本人の言葉'){var tlen=X.txt.join('').length;tel.className='eptel on'+(tlen>70?' xlong':tlen>34?' long':'');tel.innerHTML='<span style="animation-delay:.6s">'+esc(X.ev||'')+'</span>'+X.txt.map(function(t,j){return '<p style="animation-delay:'+(1.6+j*3.2)+'s">'+esc(t)+'</p>'}).join('')}else{tel.className='eptel';tel.innerHTML=''}}
+    var tel=$('eptel');if(tel){if(X.tag==='本人の言葉'){var tlen=X.txt.join('').length;tel.className='eptel on'+(tlen>70?' xlong':tlen>34?' long':'');tel.innerHTML=(X.ev&&X.ev!==X.head?'<span style="animation-delay:.6s">'+esc(X.ev)+'</span>':'')+X.txt.map(function(t,j){return '<p style="animation-delay:'+(1.6+j*3.2)+'s">'+esc(t)+'</p>'}).join('')}else{tel.className='eptel';tel.innerHTML=''}}
     clearTimeout(endT);
     if(X.ask){var e=G.ending;$('epcap').innerHTML='<div class="ept">この旅を終えて、今、どんなことを思う？</div><p class="small muted">書きたいときだけ。書かずに終えてもいいよ。</p><textarea id="epw" maxlength="120" placeholder="思ったことを、そのまま" style="margin-top:6px">'+esc(e.happy||'')+'</textarea><div class="actions" style="margin-top:8px"><button class="gold" id="epws">この言葉を残す</button><button id="epwn">書かずに終える</button></div>';
       $('epws').onclick=function(){e.happy=$('epw').value.trim();save();show(k+1)};$('epwn').onclick=function(){e.happy='';save();show(k+1)};return}
@@ -2419,6 +2437,7 @@ function vSrc(){
    '<h3>ランダムな出来事の決まり（ゲーム上の確率）</h3><div class="tablewrap"><table><thead><tr><th>出来事</th><th>起きる年齢</th><th>1年あたり</th></tr></thead><tbody>'+LIFE_RULES.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'}).join('')+'</tbody></table></div>'+
    '<h3>まだ入れていないもの</h3><ul>'+NOT_YET.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul>'+
    '<p class="small muted">『80億分の1』の仕組みを参考にした独自のルールです。原作の内部計算を再現したものではありません。</p><div class="actions"><button class="gold" id="b">もどる</button></div></section>');
+  app.querySelectorAll('table').forEach(function(t){var hs=[].map.call(t.querySelectorAll('th'),function(h){return h.textContent});t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){td.setAttribute('data-l',hs[i]||'')})})});
   $('b').onclick=function(){G.phase=G.back||'title';render()};
 }
 /* ---- 書き出し・読み込み ---- */
