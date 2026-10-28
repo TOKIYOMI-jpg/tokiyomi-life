@@ -1344,7 +1344,7 @@ function $(id){return document.getElementById(id)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function miya(t,who){return '<div class="miya"><div class="face" aria-hidden="true">時</div><p class="say"><span class="who">時詠師みやじい'+(who?' ・ '+who:'')+'</span>'+t+'</p></div>'}
 function set(html){app.innerHTML=html}
-function render(){stopTimer();clearTimeout(autoT);clearTimeout(endT);clearTimeout(demoT);if(G.phase!=='film')FILM_AGE=null;clearTimeout(filmT);var v={title:vTitle,ask4:vAsk4,ask:vAsk,axes:vAxes,play:vPlay,film:vFilm,end:vEnd,src:vSrc,io:vIO}[G.phase]||vTitle;v();
+function render(){stopTimer();clearTimeout(autoT);clearTimeout(endT);clearTimeout(demoT);if(G.phase!=='film')FILM_AGE=null;clearTimeout(filmT);var v={title:vTitle,ask4:vAsk4,ask:vAsk,axes:vAxes,play:vPlay,film:vFilm,end:vEnd,src:vSrc,io:vIO}[G.phase]||vTitle;var phc=LAST_PH!==G.phase;LAST_PH=G.phase;v();if(isMob()&&G.phase!=='play'&&G.phase!=='film'&&(phc||G.phase==='ask4'||G.phase==='ask'||G.phase==='axes'))mobTop();
   if(G.phase==='play'&&G.playing&&!G.queue.length) timer=setTimeout(loop,G.speed)}
 
 /* ---- タイトル ---- */
@@ -1867,7 +1867,10 @@ function bindHud(){var busy=G.queue.length>0;$('pp').disabled=busy;if($('pp2'))$
   $('pp').onclick=function(){G.playing?pause():play()};if($('pp2'))$('pp2').onclick=$('pp').onclick;
   app.querySelectorAll('[data-sp]').forEach(function(b){b.onclick=function(){G.pace=b.dataset.sp;G.speed=PACE[G.pace].ms;save();renderHud();if(G.playing)loop()}})}
 /* v36.18：スマホでは、人生満足度とチャートを場面の下にたたんで置く（開くと見られる） */
-var IND_OPEN=false;function isMob(){try{return window.matchMedia('(max-width:599px)').matches}catch(e){return false}}
+var IND_OPEN=false;
+/* v36.19：スマホでは、決定したらページのいちばん上に戻す（入力欄のカーソルも外す） */
+function mobTop(){try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur()}catch(e){}window.scrollTo(0,0);requestAnimationFrame(function(){window.scrollTo(0,0)})}
+var LAST_PH=null;function isMob(){try{return window.matchMedia('(max-width:599px)').matches}catch(e){return false}}
 function vPlay(){
   var it=G.queue[0],nf=needFact(it);if(nf){G.queue.unshift({type:'fact',key:nf});save();it=G.queue[0]}
   var sc=sceneFor(it);
@@ -1897,7 +1900,7 @@ function vPlay(){
 function pauseSilently(){stopTimer()}
 function stage(html){$('stage').innerHTML='<section class="panel">'+html+'</section>'}
 var TO_TOP=0;
-function scrTop(){var c=$('scr'),m=$('hudmini'),h=m&&m.offsetHeight?m:$('hud');if(!c)return;var y=c.getBoundingClientRect().top+window.scrollY-(h?h.offsetHeight:0)-8;window.scrollTo({top:Math.max(0,y),behavior:'auto'})}
+function scrTop(){if(isMob()){mobTop();return}var c=$('scr'),m=$('hudmini'),h=m&&m.offsetHeight?m:$('hud');if(!c)return;var y=c.getBoundingClientRect().top+window.scrollY-(h?h.offsetHeight:0)-8;window.scrollTo({top:Math.max(0,y),behavior:'auto'})}
 function afterResolve(){TO_TOP=1;G.queue.shift();checkMoments();save();render()}
 function checkMoments(){if(!G.axes||G.phase!=='play')return;var j=judge(G),prev=G.belowPrev||[];
   var fresh=j.below.filter(function(k){return prev.indexOf(k)<0});G.belowPrev=j.below.slice();
