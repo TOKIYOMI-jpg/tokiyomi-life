@@ -16,6 +16,10 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.nudge{margin:4px 0 0;font-size:13.5px;font-weight:700;color:#e6c34a;animation:nudgein .35s ease-out}@keyframes nudgein{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.needfix{outline:2px solid #e6c34a;outline-offset:6px;border-radius:12px}input.needfix{outline-offset:2px}
+/* v36.21：必須項目の文字入力欄は黄色の罫線 */
+input.req,textarea.req{border:1.5px solid #e6c34a!important}input.req:focus{outline:2px solid #e6c34a;outline-offset:1px}
 /* v36.17：スマホでは、上に固定するのは細い1行だけ（年齢・速さ・進める）。資産や速さの切り替えは、ページと一緒に流れる */
 .hudmini{display:none}
 @media (max-width:599px){
@@ -166,6 +170,18 @@ input{font:inherit;color:var(--moon);background:var(--night);border:1px solid va
 .card .front .more{font-size:12px;color:var(--mist);line-height:1.55;display:flex;flex-direction:column;gap:4px}
 .card.on .face{border-color:var(--gold);box-shadow:0 0 24px rgba(205,176,106,.22)}
 @media (prefers-reduced-motion:reduce){.card .in{transition:none}}
+/* v36.22：スマホでは、カードを横長にして1列に並べる。めくる前は低い帯、めくると中身が開く */
+@media (max-width:599px){
+  .spread{grid-template-columns:1fr;gap:8px}
+  .card .in{min-height:0;transition:none;transform:none!important}
+  .card .face{backface-visibility:visible;-webkit-backface-visibility:visible}
+  .card .front{transform:none;display:none}
+  .card.open .front{display:flex}.card.open .back{display:none}
+  .card .back{min-height:76px;flex-direction:row;justify-content:flex-start;align-items:center;gap:14px;padding:12px 18px;text-align:left;
+    background:radial-gradient(circle at 34px 50%, rgba(205,176,106,.28) 0 18px, transparent 19px),repeating-conic-gradient(from 0deg at 34px 50%, rgba(205,176,106,.09) 0 6deg, transparent 6deg 18deg),linear-gradient(100deg,#173326,#0e2018)}
+  .card .back .md{margin-left:48px;font-size:19px}
+  .card .back .tap{margin-left:auto}
+}
 
 /* 人生の記録 */
 .feed{list-style:none;margin:0;padding:0 0 0 18px;border-left:1px solid var(--gold-dim);display:flex;flex-direction:column;gap:6px}
@@ -1189,7 +1205,7 @@ var BG={
  funeral:function(c,k,n){R(c,0,0,160,90,'#3a2c22');for(var x=0;x<160;x+=10)R(c,x,0,1,64,'#2e231b');R(c,0,64,160,26,'#4a3a2c');R(c,0,62,160,2,'#5a4836');
    R(c,30,40,100,6,'#d9d2c4');R(c,24,46,112,6,'#cfc7b8');R(c,18,52,124,8,'#c4bcad');
    for(var r=0;r<3;r++)for(var i=0;i<16-r*3;i++){var fx=22+r*8+i*7,fy=24+r*8;R(c,fx,fy,5,5,'#f6f4ee');R(c,fx+1,fy+1,3,3,'#ffffff');if(i%3===0)R(c,fx+2,fy+2,1,1,'#e7d58a')}
-   R(c,68,8,24,28,'#1c1c22');R(c,69,9,22,26,'#cdb06a');R(c,71,11,18,22,'#d8d4cc');var H=heroLook();R(c,75,14,10,10,SKIN);R(c,75,14,10,3,FILM_AGE>=72?'#d4d4d4':H.hair);R(c,77,18,1,1,'#333');R(c,82,18,1,1,'#333');R(c,78,21,4,1,'#b07d6a');R(c,73,25,14,8,'#2a2a30');R(c,79,25,2,4,'#e8e8e8');
+   R(c,68,8,24,28,'#1c1c22');R(c,69,9,22,26,'#cdb06a');R(c,71,11,18,22,'#a9d3ea');var H=heroLook();R(c,75,14,10,10,SKIN);R(c,75,14,10,3,FILM_AGE>=72?'#d4d4d4':H.hair);R(c,77,18,1,1,'#333');R(c,82,18,1,1,'#333');R(c,78,21,4,1,'#b07d6a');R(c,73,25,14,8,'#2a2a30');R(c,79,25,2,4,'#e8e8e8');
    R(c,60,8,8,2,'#1c1c22');R(c,92,8,8,2,'#1c1c22');
    var f=Math.floor(k*5)%2;[52,106].forEach(function(x){R(c,x,38,2,8,'#f6efe4');R(c,x,35-f,2,3,'#ffb347');R(c,x-3,33,8,10,'rgba(255,190,90,.12)')});
    R(c,78,48,4,4,'#8a6b4a');for(var i=0;i<4;i++){var sx=79+Math.round(Math.sin(k*1.5+i)*2);R(c,sx,44-i*4-Math.floor((k*6)%4),1,3,'rgba(230,230,230,'+(.55-i*.12)+')')}},
@@ -1197,7 +1213,7 @@ var BG={
    R(c,104,10,40,32,'#f2e2c4');for(var y=10;y<42;y++)R(c,104,y,40,1,y<22?'#f4e6cc':'#efdcbc');R(c,123,10,2,32,'#e2d0b0');R(c,103,9,42,1,'#cbb894');R(c,103,42,42,2,'#cbb894');
    for(var i=0;i<14;i++)R(c,96+i*3,44+(i%3),2,22-(i%3),'rgba(255,240,200,.07)');
    R(c,52,52,56,4,'#6b4a30');R(c,54,56,4,10,'#5a3d27');R(c,102,56,4,10,'#5a3d27');R(c,52,51,56,1,'#8a6440');
-   R(c,72,28,16,22,'#1c1c22');R(c,73,29,14,20,'#cdb06a');R(c,74,30,12,18,'#d8d4cc');var H=heroLook();R(c,77,33,6,6,SKIN);R(c,77,33,6,2,FILM_AGE>=72?'#d4d4d4':H.hair);R(c,78,35,1,1,'#333');R(c,81,35,1,1,'#333');R(c,76,40,8,7,'#2a2a30');R(c,79,40,2,3,'#e8e8e8');R(c,71,27,1,4,'#1c1c22');R(c,88,27,1,4,'#1c1c22');
+   R(c,72,28,16,22,'#1c1c22');R(c,73,29,14,20,'#cdb06a');R(c,74,30,12,18,'#a9d3ea');var H=heroLook();R(c,77,33,6,6,SKIN);R(c,77,33,6,2,FILM_AGE>=72?'#d4d4d4':H.hair);R(c,78,35,1,1,'#333');R(c,81,35,1,1,'#333');R(c,76,40,8,7,'#2a2a30');R(c,79,40,2,3,'#e8e8e8');R(c,71,27,1,4,'#1c1c22');R(c,88,27,1,4,'#1c1c22');
    R(c,58,44,6,8,'#9fb4c4');R(c,59,45,4,6,'#b8cad6');[[56,38],[60,36],[64,38],[58,41],[62,40]].forEach(function(q){R(c,q[0],q[1],3,3,'#f6f4ee');R(c,q[0]+1,q[1]+1,1,1,'#e7d58a')});R(c,60,41,1,4,'#5f8a52');
    var f=Math.floor(k*5)%2;R(c,96,44,2,8,'#f6efe4');R(c,96,41-f,2,3,'#ffb347');R(c,93,39,8,10,'rgba(255,190,90,.12)');
    R(c,89,48,6,4,'#7a5a3c');R(c,90,47,4,1,'#9c7a52');for(var i=0;i<5;i++){var sx=91+Math.round(Math.sin(k*1.3+i)*2);R(c,sx,44-i*5-Math.floor((k*5)%5),1,3,'rgba(240,240,240,'+(.5-i*.09)+')')}},
@@ -1380,7 +1396,7 @@ function vTitle(){var s=loadSaved(),can=s&&s.phase!=='title'&&s.p&&s.p.age;
 
 /* ---- タップで答える質問 ---- */
 function opt(v,l,cur,sub){return '<button data-v="'+v+'" class="'+(String(cur)===String(v)?'on':'')+'">'+l+(sub?'<small>'+sub+'</small>':'')+'</button>'}
-function block(id,label,items,cur,other){return '<div class="qblock" data-id="'+id+'"><span class="qlabel">'+label+'</span><div class="choices">'+items.map(function(i){return opt(i[0],i[1],cur,i[2])}).join('')+'</div>'+(other?'<div class="unit" style="display:flex;gap:6px;align-items:center;max-width:260px"><input type="number" inputmode="numeric" data-other="'+id+'" placeholder="'+other+'"><span class="small muted" style="white-space:nowrap">'+(other.indexOf('歳')>=0?'歳':'万円')+'</span></div>':'')+'</div>'}
+function block(id,label,items,cur,other){return '<div class="qblock" data-id="'+id+'"><span class="qlabel">'+label+'</span><div class="choices">'+items.map(function(i){return opt(i[0],i[1],cur,i[2])}).join('')+'</div>'+(other?'<div class="unit" style="display:flex;gap:6px;align-items:center;max-width:260px"><input type="number" inputmode="numeric" class="'+(/（必須）/.test(label)?'req':'')+'" data-other="'+id+'" placeholder="'+other+'"><span class="small muted" style="white-space:nowrap">'+(other.indexOf('歳')>=0?'歳':'万円')+'</span></div>':'')+'</div>'}
 var QS=[
  {say:'まずは、今のあなたのことを教えて。',blocks:function(p){return block('age','いまの年齢',[[40,'40代前半'],[45,'40代後半'],[50,'50代前半'],[55,'50代後半'],[60,'60代前半'],[65,'60代後半'],[70,'70代']],p.age,'ちょうどの年齢（例 48歳）')+block('sex','性別（生命表に使うだけ）',[['m','男性'],['f','女性'],['x','答えない','生命表は選べます']],p.sex)+block('wishAge','何歳まで生きたい？',[[80,'80歳'],[90,'90歳'],[100,'100歳'],[110,'100歳よりもっと'],[0,'まだ分からない']],p.wishAge)+'<p class="small muted">あなたの願いとして記録します。ゲーム内の寿命の抽選（生命表）は変えません。</p>'},need:['age','sex']},
  {say:'いまは、どんなふうに働いている？',blocks:function(p){return block('job','働き方',[['work','働いている','会社員・自営など'],['part','少し働いている','パートなど'],['none','働いていない','退職・家庭など']],p.job)+block('retireAge','何歳まで働きたい？',[[60,'60歳'],[65,'65歳'],[70,'70歳'],[75,'75歳'],[80,'80歳'],[0,'もう働いていない']],p.retireAge,'ちょうどの年齢（例 85歳）')+block('freeH','週に自由に使える時間',[[5,'5時間くらい'],[10,'10時間くらい'],[20,'20時間くらい'],[35,'もっとある']],p.freeH)},need:['job','retireAge','freeH']},
@@ -1405,7 +1421,7 @@ var QS=[
    block('kids','子ども',[['skip','答えない'],[0,'いない'],[1,'1人'],[2,'2人'],[3,'3人']],f.kids)+
    block('kidAge','一番上の子の年齢',[[5,'0〜9歳'],[15,'10代'],[25,'20代'],[35,'30代'],[45,'40代']],f.kidAge)+
    '<p class="small muted">きょうだいは2歳ずつ離れていると仮定します。家族の別れと介護は、統計にもとづいて毎年抽選されます。</p>'},need:['spouse','father','mother','kids'],fam:true},
- {say:'どこで、誰と、どんな一日を過ごしたい？',blocks:function(p){return '<div class="qblock"><span class="qlabel">なりたいあなたを、ひとことで（必須）</span><input id="gtext" maxlength="80" value="'+esc(G.goal.text||'')+'" placeholder="例：海の見える町で、週3日だけ好きな仕事をしている"></div>'+
+ {say:'どこで、誰と、どんな一日を過ごしたい？',blocks:function(p){return '<div class="qblock"><span class="qlabel">なりたいあなたを、ひとことで（必須）</span><input id="gtext" class="req" maxlength="80" value="'+esc(G.goal.text||'')+'" placeholder="例：海の見える町で、週3日だけ好きな仕事をしている"></div>'+
    block('gage','いつごろまでに？',[[(p.age||50)+3,'3年後'],[(p.age||50)+5,'5年後'],[(p.age||50)+10,'10年後'],[(p.age||50)+20,'20年後'],[(p.age||50)+30,'30年後']].concat(p.wishAge>0?[[Math.min(105,p.wishAge),'生きたい年齢（'+(p.wishAge>100?'100歳以上':p.wishAge+'歳')+'）まで']]:[]),G.goal.age,'ちょうどの年齢（例 90歳）')+
    block('view','どんな景色の中にいる？',[['sea','海辺'],['forest','森と湖'],['field','田畑'],['town','町のお店'],['home','家族の家']],G.goal.view)+'<canvas id="pv" class="pix" width="160" height="90" aria-label="ゴールの景色のドット絵"></canvas>'+
    block('money','そのとき、お金はいくらあれば安心？',[[1000,'1000万円'],[2000,'2000万円'],[3000,'3000万円'],[0,'お金は数字で決めない','自分の感覚で評価']],G.goal.money==null?'':G.goal.money,'ちょうどの額')+
@@ -1432,11 +1448,11 @@ function vAsk(){var Q=QS[G.q],p=G.p;
   if($('hv'))startScene($('hv'),'stage',{bg:'room',actors:[{w:'hero',x:76,a:'wave'}],loop:true});
   $('back').onclick=function(){if(G.mdFromPlay){G.mdFromPlay=false;G.phase='play';render();return}if(G.q===0){G.phase='title'}else{G.q--;if(QS[G.q].md&&!G.wantMd)G.q--}render()};
   $('next').onclick=function(){
-    if(Q.goal){G.goal.text=$('gtext').value.trim();G.goal.scene={m:$('sm').value.trim(),n:$('sn').value.trim(),e:$('se').value.trim()};if(!G.goal.text){$('msg').textContent='なりたいあなたを、ひとことだけ書いてみて。まだ分からなければ「まだ分からない」でも大丈夫。';return}}
+    if(Q.goal){G.goal.text=$('gtext').value.trim();G.goal.scene={m:$('sm').value.trim(),n:$('sn').value.trim(),e:$('se').value.trim()};if(!G.goal.text){nudge($('gtext'),'なりたいあなたを、ひとことだけ書いてみて。まだ分からなければ「まだ分からない」でも大丈夫。');return}}
     var miss=Q.need.filter(function(k){var v=Q.fam?(p.fam||{})[k]:k==='gage'?G.goal.age:k==='money'?G.goal.money:p[k];return v==null||v===''});
     if(Q.fam){var f=p.fam||{};if((f.spouse==='m'||f.spouse==='f')&&f.spouseAge==null)miss.push('spouseAge');if(f.kids>0&&f.kidAge==null)miss.push('kidAge')}
     if(Q.goal&&!G.goal.view)G.goal.view='forest';
-    if(miss.length){$('msg').textContent='まだ選んでいない質問があるよ。';return}
+    if(miss.length){nudge(app.querySelector('.qblock[data-id='+miss[0]+']'),'ここがまだ選ばれていないよ。');return}
     if(G.q===0)p.age=Math.max(40,Math.min(100,Math.round(p.age)));
     if(G.q===1&&p.retireAge===0)p.retireAge=p.age; // すでに働いていない
     if(Q.goal){if(G.goal.age<=p.age)G.goal.age=p.age+1;if(!G.goal.money)G.goal.money=0}
@@ -1451,7 +1467,7 @@ function vAsk(){var Q=QS[G.q],p=G.p;
 var Q4N=4;
 function vAsk4(){var p=G.p,i=G.q||0,body='',say='';G.top3=G.top3||[];
   if(i===0){say='まずは、今のあなたの年齢を教えて。';body=block('age','いまの年齢（必須）',[[40,'40代前半'],[45,'40代後半'],[50,'50代前半'],[55,'50代後半'],[60,'60代前半'],[65,'60代後半'],[70,'70代']],p.age,'ちょうどの年齢（例 48歳）')}
-  else if(i===1){say='これから、どんな暮らしをしたい？';body='<div class="qblock"><span class="qlabel">なりたいあなたを、ひとことで（必須）</span><input id="gtext" maxlength="80" value="'+esc(G.goal.text||'')+'" placeholder="例：海の見える町で、週3日だけ好きな仕事をしている"></div>'+
+  else if(i===1){say='これから、どんな暮らしをしたい？';body='<div class="qblock"><span class="qlabel">なりたいあなたを、ひとことで（必須）</span><input id="gtext" class="req" maxlength="80" value="'+esc(G.goal.text||'')+'" placeholder="例：海の見える町で、週3日だけ好きな仕事をしている"></div>'+
     block('view','思い浮かぶ景色（任意）',[['sea','海辺'],['forest','森と湖'],['field','田畑'],['town','町のお店'],['home','家族の家']],G.goal.view)+'<canvas id="pv" class="pix" width="160" height="90" aria-label="ゴールの景色のドット絵"></canvas>'+
     '<details class="box"'+(G.wishT?' open':'')+'><summary>一度はかなえたいこと（任意）</summary><div class="inner"><div class="choices" id="wt">'+WISHT.map(function(w){return '<button data-v="'+w[0]+'" class="'+(G.wishT===w[0]?'on':'')+'">'+w[1]+'<small>'+w[2]+'</small></button>'}).join('')+'</div><input id="wtx" maxlength="60" value="'+esc(G.wishX||'')+'" placeholder="'+(G.wishT?wishOf(G.wishT)[3]:'例：元気なうちに北海道を旅したい')+'"><p class="small muted">書いておくと、旅の途中で、かなえるための分かれ道が出てきます。</p></div></details>'+
     '<p class="small muted">いつまでに、いくらあれば、などは決めなくて大丈夫。旅の途中で変えることもできます。</p>'}
@@ -1469,10 +1485,10 @@ function vAsk4(){var p=G.p,i=G.q||0,body='',say='';G.top3=G.top3||[];
   if($('nr'))$('nr').querySelectorAll('button').forEach(function(b){b.onclick=function(){var v=b.dataset.v==='null'?null:+b.dataset.v;G.near0={v:v,l:v==null?'わからない':NEAR.filter(function(x){return x[0]===v})[0][1]};$('nr').querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});save()}});
   $('back').onclick=function(){if(i===0)G.phase='title';else G.q=i-1;render()};
   $('next').onclick=function(){
-    if(i===0){if(p.age==null||isNaN(p.age)){$('msg').textContent='年齢を選んでね。';return}p.age=Math.max(40,Math.min(100,Math.round(p.age)))}
-    if(i===1){G.wishX=$('wtx')?$('wtx').value.trim():'';G.goal.text=$('gtext').value.trim();if(!G.goal.text){$('msg').textContent='ひとことだけ書いてみて。まだ分からなければ「まだ分からない」でも大丈夫。';return}G.goal.scene=G.goal.scene||{}}
-    if(i===2&&!G.top3.length&&!this.dataset.c){this.dataset.c=1;$('msg').textContent='選ばなくても進めます。もう一度押すと、このまま進みます。';return}
-    if(i===3&&!G.near0){$('msg').textContent='近いものを選んでね。分からなければ「わからない」で大丈夫。';return}
+    if(i===0){if(p.age==null||isNaN(p.age)){nudge(app.querySelector('.qblock[data-id=age]'),'年齢を選んでね。');return}p.age=Math.max(40,Math.min(100,Math.round(p.age)))}
+    if(i===1){G.wishX=$('wtx')?$('wtx').value.trim():'';G.goal.text=$('gtext').value.trim();if(!G.goal.text){nudge($('gtext'),'ひとことだけ書いてみて。まだ分からなければ「まだ分からない」でも大丈夫。');return}G.goal.scene=G.goal.scene||{}}
+    if(i===2&&!G.top3.length&&!this.dataset.c){this.dataset.c=1;nudge($('top3'),'選ばなくても進めます。もう一度押すと、このまま進みます。');return}
+    if(i===3&&!G.near0){nudge($('nr'),'近いものを選んでね。分からなければ「わからない」で大丈夫。');return}
     if(i<Q4N-1){G.q=i+1;render();return}
     G.quick=true;G.axes=defaultAxes();axesAuto();start()};
 }
@@ -1509,7 +1525,7 @@ function sFact(it){var Q=FACTQ[it.key],p=G.p;if(!Q||!G.unk[it.key]){afterResolve
   $('fok').onclick=function(){var miss=Q.need.filter(function(k){var v=Q.fam?(p.fam||{})[k]:p[k];return v==null||v===''});
     if(Q.fam){var f=p.fam||{};if((f.spouse==='m'||f.spouse==='f')&&f.spouseAge==null)miss.push('spouseAge');if(f.kids>0&&f.kidAge==null)miss.push('kidAge')}
     if(it.key==='sex'&&p.sex==='x'&&!G.ltPicked)miss.push('lt');
-    if(miss.length){$('fmsg').textContent='まだ選んでいない質問があるよ。'+(it.key==='sex'?'':'「あとで」でも進めます。');return}
+    if(miss.length){nudge($('stage').querySelector('.qblock[data-id='+miss[0]+']'),'ここがまだ選ばれていないよ。'+(it.key==='sex'?'':'「あとで」でも進めます。'));return}
     applyFact(it.key);afterResolve()};
 }
 function applyFact(k){var p=G.p;G.unk[k]=0;
@@ -1868,6 +1884,15 @@ function bindHud(){var busy=G.queue.length>0;$('pp').disabled=busy;if($('pp2'))$
   app.querySelectorAll('[data-sp]').forEach(function(b){b.onclick=function(){G.pace=b.dataset.sp;G.speed=PACE[G.pace].ms;save();renderHud();if(G.playing)loop()}})}
 /* v36.18：スマホでは、人生満足度とチャートを場面の下にたたんで置く（開くと見られる） */
 var IND_OPEN=false;
+/* v36.23：未入力で次へ進めないときは、その欄まで画面を動かし、すぐ近くに案内を出す。文字の欄にはカーソルを置く */
+function nudge(el,msg){if(!el){var m=$('msg')||$('fmsg');if(m)m.textContent=msg;return}
+  app.querySelectorAll('.nudge').forEach(function(x){x.remove()});app.querySelectorAll('.needfix').forEach(function(x){x.classList.remove('needfix')});
+  var box=el.closest('.qblock')||el;box.classList.add('needfix');var tip=document.createElement('p');tip.className='nudge';tip.setAttribute('role','alert');tip.textContent=msg;
+  if(el.tagName==='INPUT'||el.tagName==='TEXTAREA')el.insertAdjacentElement('afterend',tip);else box.insertAdjacentElement('afterbegin',tip);
+  var m2=$('msg')||$('fmsg');if(m2)m2.textContent='';
+  try{box.scrollIntoView({block:'center'})}catch(e){box.scrollIntoView()}
+  if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){try{el.focus({preventScroll:true})}catch(e){el.focus()}}
+  var clr=function(){box.classList.remove('needfix');if(tip.parentNode)tip.remove()};box.addEventListener('click',function(e){if(e.target.tagName==='BUTTON')clr()},{once:true});if(el.tagName==='INPUT')el.addEventListener('input',clr,{once:true})}
 /* v36.19：スマホでは、決定したらページのいちばん上に戻す（入力欄のカーソルも外す） */
 function mobTop(){try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur()}catch(e){}window.scrollTo(0,0);requestAnimationFrame(function(){window.scrollTo(0,0)})}
 var LAST_PH=null;function isMob(){try{return window.matchMedia('(max-width:599px)').matches}catch(e){return false}}
