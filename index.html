@@ -16,6 +16,21 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+/* v36.17：スマホでは、上に固定するのは細い1行だけ（年齢・速さ・進める）。資産や速さの切り替えは、ページと一緒に流れる */
+.hudmini{display:none}
+@media (max-width:599px){
+  .hudmini{display:flex;position:sticky;top:env(safe-area-inset-top,0px);z-index:6;align-items:center;gap:10px;padding:6px 0;background:color-mix(in srgb,var(--night) 95%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+  .hudmini .age{font-size:22px}.hudmini .age small{font-size:12px}.hudmini .yr{font-size:13px}
+  .hudmini .mpace{font-size:12px;color:var(--mist);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+  .hudmini button{margin-left:auto;padding:6px 14px;font-size:14px}
+  .hud{position:static!important;backdrop-filter:none!important;background:transparent!important;padding-block:6px!important;gap:6px!important}
+  .hud .hudtop{display:none!important}
+  .hud #pp{display:none!important}
+  .chip{font-size:12px;padding:1px 8px}
+  .ctrl .sp button{padding:5px 8px;font-size:12px}.ctrl .sp small{display:none}
+  .spdesc{font-size:12px}
+}
+
 .feed li.auto .t small{color:var(--gold)}
 .autobar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:13px;color:var(--gold);border:1px dashed var(--gold-dim);border-radius:10px;padding:6px 10px}
 .autobar button{padding:4px 12px;font-size:13px}
@@ -1843,12 +1858,12 @@ function reasonText(g,j){
   return ''}
 
 /* ---- 旅 ---- */
-function hud(){var c=chipJ(G);return '<div class="hud" id="hud"><div class="hudtop"><span class="age num">'+G.age+'<small>歳</small></span><span class="yr">'+yearOf(G.age)+'</span></div>'+
+function hud(){var c=chipJ(G);return '<div class="hudmini" id="hudmini"><span class="age num">'+G.age+'<small>歳</small></span><span class="yr">'+yearOf(G.age)+'</span><span class="mpace">'+PACE[G.pace||'normal'].label+'</span><button class="gold" id="pp2">'+(G.playing?'❚❚ 止める':'▶ 進める')+'</button></div><div class="hud" id="hud"><div class="hudtop"><span class="age num">'+G.age+'<small>歳</small></span><span class="yr">'+yearOf(G.age)+'</span></div>'+
   '<div class="chips"><span class="chip">資産 '+(G.unk&&G.unk.money?'不明':man(G.res.assets))+'</span><span class="chip">自由時間 '+(G.unk&&G.unk.work?'不明':'週'+fmtH(freeH(G))+'h')+'</span><span class="chip">体力 '+ENERGY[G.energy]+'</span>'+(stressTxt()?'<span class="chip ng">ストレス '+stressTxt()+'</span>':'')+'<span class="chip '+c[0]+'">'+c[1]+'</span></div>'+
   '<div class="ctrl"><button class="gold" id="pp">'+(G.playing?'❚❚ 止める':'▶ 進める')+'</button><div class="sp">'+['slow','normal','fast','turbo','demo'].map(function(k){return '<button data-sp="'+k+'" class="'+((G.pace||'normal')===k?'on':'')+'" title="40歳から100歳までの目安 '+PACE[k].min+'">'+PACE[k].label+'<small> '+PACE[k].min.replace('約','')+'</small></button>'}).join('')+'</div></div><p class="spdesc small muted">'+SPDESC[G.pace||'normal']+'</p></div>'}
-function renderHud(){var h=$('hud');if(!h)return;h.outerHTML=hud();bindHud()}
-function bindHud(){var busy=G.queue.length>0;$('pp').disabled=busy;
-  $('pp').onclick=function(){G.playing?pause():play()};
+function renderHud(){var h=$('hud');if(!h)return;var m=$('hudmini');if(m)m.remove();h.outerHTML=hud();bindHud()}
+function bindHud(){var busy=G.queue.length>0;$('pp').disabled=busy;if($('pp2'))$('pp2').disabled=busy;
+  $('pp').onclick=function(){G.playing?pause():play()};if($('pp2'))$('pp2').onclick=$('pp').onclick;
   app.querySelectorAll('[data-sp]').forEach(function(b){b.onclick=function(){G.pace=b.dataset.sp;G.speed=PACE[G.pace].ms;save();renderHud();if(G.playing)loop()}})}
 function vPlay(){
   var it=G.queue[0],nf=needFact(it);if(nf){G.queue.unshift({type:'fact',key:nf});save();it=G.queue[0]}
@@ -1877,7 +1892,7 @@ function vPlay(){
 function pauseSilently(){stopTimer()}
 function stage(html){$('stage').innerHTML='<section class="panel">'+html+'</section>'}
 var TO_TOP=0;
-function scrTop(){var c=$('scr'),h=$('hud');if(!c)return;var y=c.getBoundingClientRect().top+window.scrollY-(h?h.offsetHeight:0)-8;window.scrollTo({top:Math.max(0,y),behavior:'auto'})}
+function scrTop(){var c=$('scr'),m=$('hudmini'),h=m&&m.offsetHeight?m:$('hud');if(!c)return;var y=c.getBoundingClientRect().top+window.scrollY-(h?h.offsetHeight:0)-8;window.scrollTo({top:Math.max(0,y),behavior:'auto'})}
 function afterResolve(){TO_TOP=1;G.queue.shift();checkMoments();save();render()}
 function checkMoments(){if(!G.axes||G.phase!=='play')return;var j=judge(G),prev=G.belowPrev||[];
   var fresh=j.below.filter(function(k){return prev.indexOf(k)<0});G.belowPrev=j.below.slice();
