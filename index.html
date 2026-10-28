@@ -219,6 +219,7 @@ details.box>.inner{padding:0 18px 18px;display:flex;flex-direction:column;gap:12
 /* 今の暮らしのインジケーター */
 .stagewrap{display:grid;grid-template-columns:1fr;gap:10px;align-items:start}
 .caprow{display:grid;grid-template-columns:1fr;gap:10px}.caprow .cap{margin:0}
+.indbox .ind{border:0;background:none;padding:0}.indbox .ind .mini{height:240px}
 .stagewrap .pix.big{align-self:start}
 .ind{border:1px solid var(--gold-dim);border-radius:14px;background:linear-gradient(180deg,#132a20,#0e2018);padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden}
 .ind .mini{display:block;width:100%;height:260px}
@@ -1865,15 +1866,19 @@ function renderHud(){var h=$('hud');if(!h)return;var m=$('hudmini');if(m)m.remov
 function bindHud(){var busy=G.queue.length>0;$('pp').disabled=busy;if($('pp2'))$('pp2').disabled=busy;
   $('pp').onclick=function(){G.playing?pause():play()};if($('pp2'))$('pp2').onclick=$('pp').onclick;
   app.querySelectorAll('[data-sp]').forEach(function(b){b.onclick=function(){G.pace=b.dataset.sp;G.speed=PACE[G.pace].ms;save();renderHud();if(G.playing)loop()}})}
+/* v36.18：スマホでは、人生満足度とチャートを場面の下にたたんで置く（開くと見られる） */
+var IND_OPEN=false;function isMob(){try{return window.matchMedia('(max-width:599px)').matches}catch(e){return false}}
 function vPlay(){
   var it=G.queue[0],nf=needFact(it);if(nf){G.queue.unshift({type:'fact',key:nf});save();it=G.queue[0]}
   var sc=sceneFor(it);
-  set(hud()+'<div class="stagewrap"><canvas id="scr" class="pix big" width="160" height="90" aria-label="いまの場面のドット絵"></canvas><aside class="ind" id="ind" aria-label="人生満足度と八つの分野">'+indHTML(it)+'</aside></div><div class="caprow"><p class="cap">'+esc(sc.cap)+'</p></div><div id="stage"></div>'+
+  var mob=isMob(),indA='<aside class="ind" id="ind" aria-label="人生満足度と八つの分野">'+indHTML(it)+'</aside>';
+  set(hud()+'<div class="stagewrap"><canvas id="scr" class="pix big" width="160" height="90" aria-label="いまの場面のドット絵"></canvas>'+(mob?'':indA)+'</div><div class="caprow"><p class="cap">'+esc(sc.cap)+'</p></div><div id="stage"></div>'+
+   (mob?'<details class="box indbox" id="indbox"'+(IND_OPEN?' open':'')+'><summary>人生満足度と八つの分野　<span class="small muted">'+fmtS(judge(G).S)+'</span></summary><div class="inner">'+indA+'</div></details>':'')+
    '<details class="box" open><summary>人生の記録</summary><div class="inner"><ol class="feed">'+G.feed.slice(-40).reverse().map(function(e){return '<li class="'+e.kind+(e.auto?' auto':'')+'"><span class="a">'+e.age+'歳</span><span class="t">'+esc(e.text)+(e.sub?'<small>'+esc(e.sub)+'</small>':'')+'</span></li>'}).join('')+'</ol></div></details>'+
    '<details class="box"><summary>八つの分野と、大切にしたいこと</summary><div class="inner">'+radar(G)+legend()+judgeHTML(G)+
      (judge(G).status==='ng'?'<div class="actions"><button id="fix">ラインを取り戻す道を探す</button><button id="rev">分野とラインを見直す</button></div>':'<div class="actions"><button id="rev">分野とラインを見直す</button></div>')+'</div></details>'+
    '<div class="menu"><button id="mm">お金の前提を見直す</button><button id="mw">もしもの出費を試す</button><button id="mh">もしもの病気・事故を試す</button><button id="mg">目標を変える</button><button id="mr">目標に到達した</button><button id="ma">あきらめる</button><button id="mp">休む（保存して中断）</button><button id="mi">ファイルに保存</button><button id="ms">出典とルール</button></div>');
-  bindHud(); startScene($('scr'),sc.id,sc.par); bindInd();if(TO_TOP){TO_TOP=0;scrTop()}
+  bindHud(); startScene($('scr'),sc.id,sc.par); bindInd();if($('indbox'))$('indbox').ontoggle=function(){IND_OPEN=this.open};if(TO_TOP){TO_TOP=0;scrTop()}
   if(it){pauseSilently();({div:sDiv,gstep:sGstep,fact:sFact,look:sLook,theme:sTheme,wish:sWish,whatill:sWhatIll,lib:sLib,whatif:sWhatif,voice:sVoice,feel:sFeel,ev:sEv,joy:sJoy,loss:sLoss,kidMarry:sKid,branch:sBranch,review:sReview,body:sBody,retire:sRetire,deadline:sDeadline,goal:sGoal,reach:sReach,give:sGive}[it.type])(it);if(G.queue[0]===it&&G.phase==='play')autoArm(it)}
   else if(!G.playing) $('stage').innerHTML='<section class="panel"><p class="small muted">目指す景色：「'+esc(G.goal.text)+'」'+(G.goal.age?' · '+G.goal.age+'歳ごろ':'')+'</p>'+miya(G.feed.length<=2?'準備ができたよ。「人生を進める」を押すと、一年ずつ時が流れていく。分かれ道が来たら、そこで止まるからね。':'少し休んでいるところ。続けるときは「人生を進める」を。')+'</section>';
 
