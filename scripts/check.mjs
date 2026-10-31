@@ -1,0 +1,13 @@
+import {readFile} from 'node:fs/promises';
+import {Script} from 'node:vm';
+import assert from 'node:assert/strict';
+const html=await readFile('www/index.html','utf8');
+const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
+assert(scripts.length>0);
+for(const [,s] of scripts)new Script(s);
+assert(html.includes('tokiyomi-gyakuten-v2'),'Save key changed');
+assert(!/https:\/\/fonts\./.test(html),'Remote fonts');
+assert(!/<script[^>]+src=/.test(html),'Remote scripts');
+const c=JSON.parse(await readFile('capacitor.config.json','utf8'));
+assert.equal(c.webDir,'www');assert(!c.server?.url);
+console.log('PASS: syntax, offline assets, save key, bundle configuration');
